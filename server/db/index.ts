@@ -7,11 +7,12 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configure PostgreSQL pool with either connection string or individual params
+// Configure PostgreSQL pool supporting both external connection strings and individual params
 export const pool = new Pool(
   config.db.connectionString
     ? {
         connectionString: config.db.connectionString,
+        ssl: config.db.ssl,
         max: config.db.max,
         idleTimeoutMillis: config.db.idleTimeoutMillis,
         connectionTimeoutMillis: config.db.connectionTimeoutMillis,
@@ -22,6 +23,7 @@ export const pool = new Pool(
         user: config.db.user,
         password: config.db.password,
         database: config.db.database,
+        ssl: config.db.ssl,
         max: config.db.max,
         idleTimeoutMillis: config.db.idleTimeoutMillis,
         connectionTimeoutMillis: config.db.connectionTimeoutMillis,
@@ -50,7 +52,7 @@ export async function initDatabase(): Promise<void> {
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schemaSql = fs.readFileSync(schemaPath, 'utf8');
     await pool.query(schemaSql);
-    console.log('✓ PostgreSQL database schema verified and initialized');
+    console.log('✓ External PostgreSQL database schema verified and initialized');
   } catch (err: any) {
     console.error('✗ Failed to initialize database schema:', err.message);
     throw err;

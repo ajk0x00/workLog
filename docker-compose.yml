@@ -1,8 +1,27 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: worklog_app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+      DB_SSL: ${DB_SSL:-false}
+      JWT_SECRET: ${JWT_SECRET:-worklog-super-secret-key-change-in-production-2026}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    ports:
+      - "${APP_PORT:-80}:3000"
+
+  # Optional local postgres service (only used if you want a local DB instead of external)
   db:
     image: postgres:16-alpine
     container_name: worklog_postgres
     restart: unless-stopped
+    profiles:
+      - local-db
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
@@ -16,33 +35,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - worklog_net
-
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: worklog_app
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-worklog}
-      JWT_SECRET: ${JWT_SECRET:-worklog-super-secret-key-change-in-production-2026}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-    ports:
-      - "${APP_PORT:-3000}:3000"
-    networks:
-      - worklog_net
 
 volumes:
   postgres_data:
     name: worklog_postgres_data
-
-networks:
-  worklog_net:
-    driver: bridge

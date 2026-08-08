@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: worklog_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-worklog}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-worklog}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - worklog_net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: worklog_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-worklog}
+      JWT_SECRET: ${JWT_SECRET:-worklog-super-secret-key-change-in-production-2026}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    networks:
+      - worklog_net
+
+volumes:
+  postgres_data:
+    name: worklog_postgres_data
+
+networks:
+  worklog_net:
+    driver: bridge

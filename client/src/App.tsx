@@ -108,16 +108,23 @@ export const App: React.FC = () => {
     tags: string[];
     contentMarkdown?: string;
   }) => {
-    await api.post('/api/logs', {
-      title: data.title,
-      durationMinutes: data.durationMinutes,
-      status: data.status,
-      tags: data.tags,
-      contentMarkdown: data.contentMarkdown,
-    });
-    await fetchLogs();
-    await fetchTags();
-    await fetchStats();
+    try {
+      await api.post('/api/logs', {
+        title: data.title,
+        durationMinutes: data.durationMinutes,
+        status: data.status,
+        tags: data.tags,
+        contentMarkdown: data.contentMarkdown,
+      });
+      await fetchLogs();
+      await fetchTags();
+      await fetchStats();
+    } catch (err: any) {
+      if (err?.statusCode === 401 || err?.message?.includes('Authentication')) {
+        setAuthOpen(true);
+      }
+      throw err;
+    }
   };
 
   // Save (Create or Edit) Detailed Log
@@ -132,14 +139,21 @@ export const App: React.FC = () => {
     achievements: string;
     tags: string[];
   }) => {
-    if (data.id) {
-      await api.put(`/api/logs/${data.id}`, data);
-    } else {
-      await api.post('/api/logs', data);
+    try {
+      if (data.id) {
+        await api.put(`/api/logs/${data.id}`, data);
+      } else {
+        await api.post('/api/logs', data);
+      }
+      await fetchLogs();
+      await fetchTags();
+      await fetchStats();
+    } catch (err: any) {
+      if (err?.statusCode === 401 || err?.message?.includes('Authentication')) {
+        setAuthOpen(true);
+      }
+      throw err;
     }
-    await fetchLogs();
-    await fetchTags();
-    await fetchStats();
   };
 
   // Status Change

@@ -24,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data.user);
     } catch {
       setUser(null);
+      localStorage.removeItem('worklog_token');
     } finally {
       setLoading(false);
     }
@@ -34,20 +35,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [refreshUser]);
 
   const login = async (loginInput: string, password: string) => {
-    const res = await api.post<{ user: User; message: string }>('/api/auth/login', {
+    const res = await api.post<{ user: User; token: string; message: string }>('/api/auth/login', {
       login: loginInput,
       password,
     });
+    if (res.token) {
+      localStorage.setItem('worklog_token', res.token);
+    }
     setUser(res.user);
   };
 
   const register = async (email: string, username: string, password: string, fullName?: string) => {
-    const res = await api.post<{ user: User; message: string }>('/api/auth/register', {
+    const res = await api.post<{ user: User; token: string; message: string }>('/api/auth/register', {
       email,
       username,
       password,
       fullName,
     });
+    if (res.token) {
+      localStorage.setItem('worklog_token', res.token);
+    }
     setUser(res.user);
   };
 
@@ -55,6 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.post('/api/auth/logout');
     } finally {
+      localStorage.removeItem('worklog_token');
       setUser(null);
     }
   };

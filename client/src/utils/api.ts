@@ -13,6 +13,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers.set('Content-Type', 'application/json');
   }
 
+  // Attach token from localStorage if present as fallback/dual authentication
+  const savedToken = localStorage.getItem('worklog_token');
+  if (savedToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${savedToken}`);
+  }
+
   const response = await fetch(endpoint, {
     ...options,
     headers,

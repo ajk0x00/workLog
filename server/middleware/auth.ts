@@ -25,11 +25,12 @@ export function signToken(user: AuthUser): string {
 }
 
 export function setAuthCookie(res: Response, token: string): void {
-  const isProduction = config.nodeEnv === 'production';
+  // Only set secure if explicitly configured for HTTPS production
+  const isSecure = process.env.COOKIE_SECURE === 'true';
   res.cookie(config.cookieName, token, {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
+    secure: isSecure,
+    sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/',
   });

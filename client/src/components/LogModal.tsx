@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { WorkLog, Tag, LogStatus } from '../types/index.js';
-import { X, Plus, Eye, Code } from 'lucide-react';
+import { X, Plus, Eye, Code, AlertTriangle, ArrowRightCircle } from 'lucide-react';
 
 interface LogModalProps {
   isOpen: boolean;
@@ -31,7 +31,6 @@ export const LogModal: React.FC<LogModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
-  const [durationMinutes, setDurationMinutes] = useState(60);
   const [status, setStatus] = useState<LogStatus>('done');
   const [contentMarkdown, setContentMarkdown] = useState('');
   const [blockers, setBlockers] = useState('');
@@ -47,7 +46,6 @@ export const LogModal: React.FC<LogModalProps> = ({
     if (initialLog) {
       setTitle(initialLog.title);
       setLogDate(initialLog.log_date || new Date().toISOString().split('T')[0]);
-      setDurationMinutes(initialLog.duration_minutes || 60);
       setStatus(initialLog.status || 'done');
       setContentMarkdown(initialLog.content_markdown || '');
       setBlockers(initialLog.blockers || '');
@@ -56,7 +54,6 @@ export const LogModal: React.FC<LogModalProps> = ({
     } else {
       setTitle('');
       setLogDate(new Date().toISOString().split('T')[0]);
-      setDurationMinutes(60);
       setStatus('done');
       setContentMarkdown('');
       setBlockers('');
@@ -97,7 +94,7 @@ export const LogModal: React.FC<LogModalProps> = ({
         title: title.trim(),
         logDate,
         contentMarkdown,
-        durationMinutes,
+        durationMinutes: 0,
         status,
         blockers,
         achievements,
@@ -105,21 +102,21 @@ export const LogModal: React.FC<LogModalProps> = ({
       });
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Failed to save log');
+      alert(err.message || 'Failed to save shift log');
     } finally {
       setSaving(false);
     }
   };
 
   const insertTaskSnippet = () => {
-    setContentMarkdown((prev) => `${prev ? prev + '\n' : ''}- [ ] New task item`);
+    setContentMarkdown((prev) => `${prev ? prev + '\n' : ''}- [x] Completed task item\n- [ ] Handover / pending item`);
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-dialog" style={{ maxWidth: 660 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">{initialLog ? 'Edit Work Log' : 'Create Detailed Work Log'}</h2>
+          <h2 className="modal-title">{initialLog ? 'Edit Shift Work Details' : 'End-of-Shift Work Details'}</h2>
           <button className="btn btn-icon btn-sm" onClick={onClose}>
             <X size={18} />
           </button>
@@ -127,13 +124,13 @@ export const LogModal: React.FC<LogModalProps> = ({
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            {/* Title */}
+            {/* Shift Title / Summary */}
             <div className="form-group">
-              <label className="form-label">Work Title *</label>
+              <label className="form-label">Shift Summary / Headline *</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="E.g., Finished PostgreSQL migration & refactored queries"
+                placeholder="E.g., Deployed v2 release, resolved staging incident & updated docs"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
@@ -141,10 +138,10 @@ export const LogModal: React.FC<LogModalProps> = ({
               />
             </div>
 
-            {/* Date, Duration, Status Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {/* Shift Date & Status */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="form-group">
-                <label className="form-label">Date</label>
+                <label className="form-label">Shift Date</label>
                 <input
                   type="date"
                   className="form-input"
@@ -154,27 +151,15 @@ export const LogModal: React.FC<LogModalProps> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Duration (Minutes)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="15"
-                  className="form-input"
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(parseInt(e.target.value || '0', 10))}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Status</label>
+                <label className="form-label">Shift Outcome / Status</label>
                 <select
                   className="form-select"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as LogStatus)}
                 >
-                  <option value="done">✅ Done</option>
-                  <option value="in_progress">⏳ In Progress</option>
-                  <option value="blocked">🛑 Blocked</option>
+                  <option value="done">✅ Shift Completed (All Goals Met)</option>
+                  <option value="in_progress">⏳ In Progress / Handover Required</option>
+                  <option value="blocked">🛑 Blocked / Needs Follow-up</option>
                 </select>
               </div>
             </div>
@@ -182,14 +167,14 @@ export const LogModal: React.FC<LogModalProps> = ({
             {/* Tags Selection & Quick Creator */}
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-label">Tags / Categories</label>
+                <label className="form-label">Projects & Categories</label>
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
                   style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                   onClick={() => setShowTagCreator(!showTagCreator)}
                 >
-                  <Plus size={12} /> {showTagCreator ? 'Cancel' : 'New Tag'}
+                  <Plus size={12} /> {showTagCreator ? 'Cancel' : 'New Project Tag'}
                 </button>
               </div>
 
@@ -198,7 +183,7 @@ export const LogModal: React.FC<LogModalProps> = ({
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="Tag name (e.g. devops)"
+                    placeholder="Project tag (e.g., billing)"
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
                     style={{ flex: 1 }}
@@ -237,19 +222,19 @@ export const LogModal: React.FC<LogModalProps> = ({
               </div>
             </div>
 
-            {/* Markdown Editor & Preview */}
+            {/* Markdown Work Checklist & Details */}
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-label">Notes & Checklist (Markdown)</label>
+                <label className="form-label">Detailed Work & Task Checklist (Markdown)</label>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm"
                     style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                     onClick={insertTaskSnippet}
-                    title="Insert task checkbox"
+                    title="Insert checklist template"
                   >
-                    + Checkbox
+                    + Checklists
                   </button>
                   <button
                     type="button"
@@ -271,8 +256,8 @@ export const LogModal: React.FC<LogModalProps> = ({
               {activeTab === 'write' ? (
                 <textarea
                   className="form-textarea"
-                  rows={5}
-                  placeholder={`- [x] Tested PostgreSQL pool failover\n- [ ] Write integration test for standup endpoint\n\n### Implementation details\nAdded retry logic and optimized indexes.`}
+                  rows={6}
+                  placeholder={`- [x] Merged pull request #409 for PostgreSQL migrations\n- [x] Verified zero downtime in staging\n- [ ] Handover: monitor pod memory during peak hours\n\n### Highlights\nResolved auth cookie compatibility over plain HTTP.`}
                   value={contentMarkdown}
                   onChange={(e) => setContentMarkdown(e.target.value)}
                 />
@@ -283,7 +268,7 @@ export const LogModal: React.FC<LogModalProps> = ({
                     background: 'var(--bg-input)',
                     padding: 12,
                     borderRadius: 'var(--radius-md)',
-                    minHeight: 110,
+                    minHeight: 130,
                   }}
                 >
                   {contentMarkdown ? (
@@ -295,27 +280,33 @@ export const LogModal: React.FC<LogModalProps> = ({
               )}
             </div>
 
-            {/* Blockers & Achievements */}
+            {/* Handover & Blockers */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="form-group">
-                <label className="form-label">Blockers (Optional)</label>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <ArrowRightCircle size={13} color="var(--accent-primary)" />
+                  <span>Handover / Next Shift Notes (Optional)</span>
+                </label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="E.g. Waiting on API credentials"
-                  value={blockers}
-                  onChange={(e) => setBlockers(e.target.value)}
+                  placeholder="E.g., Review PR #12 and check test run"
+                  value={achievements}
+                  onChange={(e) => setAchievements(e.target.value)}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Achievements (Optional)</label>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <AlertTriangle size={13} color="var(--accent-danger)" />
+                  <span>Blockers / Escalations (Optional)</span>
+                </label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="E.g. Shipped v1 to staging!"
-                  value={achievements}
-                  onChange={(e) => setAchievements(e.target.value)}
+                  placeholder="E.g., Blocked on AWS IAM permissions"
+                  value={blockers}
+                  onChange={(e) => setBlockers(e.target.value)}
                 />
               </div>
             </div>
@@ -326,7 +317,7 @@ export const LogModal: React.FC<LogModalProps> = ({
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" disabled={!title.trim() || saving}>
-              {saving ? 'Saving...' : initialLog ? 'Update Log' : 'Save Work Log'}
+              {saving ? 'Saving...' : initialLog ? 'Update Shift Entry' : 'Save Shift Work Details'}
             </button>
           </div>
         </form>

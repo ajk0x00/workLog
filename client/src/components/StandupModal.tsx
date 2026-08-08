@@ -30,7 +30,7 @@ export const StandupModal: React.FC<StandupModalProps> = ({ isOpen, onClose }) =
         blockersCount: res.blockersCount,
       });
     } catch (err: any) {
-      alert(err.message || 'Failed to generate standup');
+      alert(err.message || 'Failed to generate shift report');
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ export const StandupModal: React.FC<StandupModalProps> = ({ isOpen, onClose }) =
       <div className="modal-dialog" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h2 className="modal-title">📋 Daily Standup Summary</h2>
+            <h2 className="modal-title">📋 End-of-Shift / Standup Report</h2>
           </div>
           <button className="btn btn-icon btn-sm" onClick={onClose}>
             <X size={18} />
@@ -66,7 +66,7 @@ export const StandupModal: React.FC<StandupModalProps> = ({ isOpen, onClose }) =
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Calendar size={15} color="var(--text-muted)" />
-              <label className="form-label" style={{ margin: 0 }}>Target Date:</label>
+              <label className="form-label" style={{ margin: 0 }}>Shift Date:</label>
               <input
                 type="date"
                 className="form-input"
@@ -89,9 +89,9 @@ export const StandupModal: React.FC<StandupModalProps> = ({ isOpen, onClose }) =
 
           {stats && (
             <div style={{ display: 'flex', gap: 12, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              <span>Previous day logs: <strong>{stats.prevCount}</strong></span>
+              <span>Shift entries: <strong>{stats.todayCount}</strong></span>
               <span>•</span>
-              <span>Today items: <strong>{stats.todayCount}</strong></span>
+              <span>Previous shift items: <strong>{stats.prevCount}</strong></span>
               <span>•</span>
               <span>Active blockers: <strong>{stats.blockersCount}</strong></span>
             </div>
@@ -100,10 +100,10 @@ export const StandupModal: React.FC<StandupModalProps> = ({ isOpen, onClose }) =
           <div className="form-group">
             <textarea
               className="form-textarea"
-              style={{ minHeight: 240, fontFamily: 'var(--font-mono)', fontSize: '0.825rem' }}
+              style={{ minHeight: 250, fontFamily: 'var(--font-mono)', fontSize: '0.825rem' }}
               value={standupText}
               onChange={(e) => setStandupText(e.target.value)}
-              placeholder="Standup summary is generating..."
+              placeholder="End-of-shift report is generating..."
             />
           </div>
         </div>
@@ -126,7 +126,7 @@ export const StandupModal: React.FC<StandupModalProps> = ({ isOpen, onClose }) =
             ) : (
               <>
                 <Copy size={16} />
-                <span>Copy for Slack / Teams</span>
+                <span>Copy for Slack / Teams / Email</span>
               </>
             )}
           </button>

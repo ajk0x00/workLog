@@ -1,31 +1,27 @@
 import React, { useState } from 'react';
 import type { Tag, LogStatus } from '../types/index.js';
-import { Plus, SlidersHorizontal, Check, Clock, AlertCircle } from 'lucide-react';
+import { Plus, SlidersHorizontal, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface QuickLogBarProps {
   tags: Tag[];
   onAddLog: (data: {
     title: string;
-    durationMinutes: number;
+    durationMinutes?: number;
     status: LogStatus;
     tags: string[];
     contentMarkdown?: string;
   }) => Promise<void>;
   onOpenDetailedModal: () => void;
-  dailyGoalHours: number;
-  currentTodayHours: number;
+  streakCount: number;
 }
 
 export const QuickLogBar: React.FC<QuickLogBarProps> = ({
   tags,
   onAddLog,
   onOpenDetailedModal,
-  dailyGoalHours,
-  currentTodayHours,
 }) => {
   const [title, setTitle] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState(60);
   const [status, setStatus] = useState<LogStatus>('done');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -44,37 +40,25 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
       setSubmitting(true);
       await onAddLog({
         title: title.trim(),
-        durationMinutes,
+        durationMinutes: 0,
         status,
         tags: selectedTags,
       });
 
-      // If this entry reaches or surpasses the daily goal, fire confetti!
-      const newHours = currentTodayHours + durationMinutes / 60;
-      if (currentTodayHours < dailyGoalHours && newHours >= dailyGoalHours) {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-      }
+      confetti({
+        particleCount: 60,
+        spread: 60,
+        origin: { y: 0.7 },
+      });
 
       setTitle('');
       setSelectedTags([]);
     } catch (err: any) {
-      alert(err.message || 'Failed to save log');
+      alert(err.message || 'Failed to save shift log');
     } finally {
       setSubmitting(false);
     }
   };
-
-  const durationPresets = [
-    { label: '15m', value: 15 },
-    { label: '30m', value: 30 },
-    { label: '1h', value: 60 },
-    { label: '2h', value: 120 },
-    { label: '4h', value: 240 },
-  ];
 
   return (
     <div className="quick-log-card">
@@ -83,7 +67,7 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
           <input
             type="text"
             className="quick-log-input"
-            placeholder="What did you work on? (e.g., Implemented auth endpoints #backend)"
+            placeholder="End-of-shift summary (e.g., Completed release deployment & resolved API incidents #devops)"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             disabled={submitting}
@@ -93,72 +77,61 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
             type="submit"
             className="btn btn-primary btn-sm"
             disabled={!title.trim() || submitting}
-            title="Log work (Enter)"
+            title="Log shift work (Enter)"
           >
             <Plus size={16} />
-            <span>Log</span>
+            <span>Log Shift</span>
           </button>
 
           <button
             type="button"
             className="btn btn-secondary btn-sm"
             onClick={onOpenDetailedModal}
-            title="Open full markdown editor"
+            title="Open detailed shift report with markdown & handover notes"
           >
             <SlidersHorizontal size={14} />
-            <span>Details</span>
+            <span>Detailed Entry</span>
           </button>
         </div>
 
         <div className="quick-log-bottom">
           <div className="quick-controls">
-            {/* Status Selector Pills */}
+            {/* Shift Status Selector */}
             <div className="pill-group">
               <button
                 type="button"
                 className={`pill-btn ${status === 'done' ? 'active-done' : ''}`}
                 onClick={() => setStatus('done')}
+                title="Shift tasks completed successfully"
               >
-                <Check size={12} style={{ display: 'inline', marginRight: 4 }} />
-                Done
+                <CheckCircle2 size={12} style={{ display: 'inline', marginRight: 4 }} />
+                Completed
               </button>
               <button
                 type="button"
                 className={`pill-btn ${status === 'in_progress' ? 'active-in_progress' : ''}`}
                 onClick={() => setStatus('in_progress')}
+                title="Work ongoing / Handover for next shift"
               >
                 <Clock size={12} style={{ display: 'inline', marginRight: 4 }} />
-                In Progress
+                In Progress / Handover
               </button>
               <button
                 type="button"
                 className={`pill-btn ${status === 'blocked' ? 'active-blocked' : ''}`}
                 onClick={() => setStatus('blocked')}
+                title="Shift encountered blockers"
               >
-                <AlertCircle size={12} style={{ display: 'inline', marginRight: 4 }} />
+                <AlertTriangle size={12} style={{ display: 'inline', marginRight: 4 }} />
                 Blocked
               </button>
             </div>
-
-            {/* Duration Presets */}
-            <div className="pill-group">
-              {durationPresets.map((d) => (
-                <button
-                  key={d.value}
-                  type="button"
-                  className={`pill-btn ${durationMinutes === d.value ? 'active-done' : ''}`}
-                  onClick={() => setDurationMinutes(d.value)}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
           </div>
 
-          {/* Quick Tag Selector Chips */}
+          {/* Quick Project/Category Tag Chips */}
           {tags.length > 0 && (
             <div className="filter-chips-row" style={{ gap: '4px' }}>
-              {tags.slice(0, 6).map((tag) => {
+              {tags.slice(0, 8).map((tag) => {
                 const isSelected = selectedTags.includes(tag.name);
                 return (
                   <button

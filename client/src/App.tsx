@@ -103,7 +103,7 @@ export const App: React.FC = () => {
   // Add Log
   const handleAddLog = async (data: {
     title: string;
-    durationMinutes: number;
+    durationMinutes?: number;
     status: LogStatus;
     tags: string[];
     contentMarkdown?: string;
@@ -111,7 +111,7 @@ export const App: React.FC = () => {
     try {
       await api.post('/api/logs', {
         title: data.title,
-        durationMinutes: data.durationMinutes,
+        durationMinutes: data.durationMinutes || 0,
         status: data.status,
         tags: data.tags,
         contentMarkdown: data.contentMarkdown,
@@ -266,16 +266,15 @@ export const App: React.FC = () => {
       <main className="main-content">
         {user ? (
           <>
-            {/* Quick Log Input Bar */}
+            {/* End of Shift Quick Log Bar */}
             <QuickLogBar
               tags={tags}
               onAddLog={handleAddLog}
               onOpenDetailedModal={handleOpenCreate}
-              dailyGoalHours={stats?.dailyGoalHours || 8}
-              currentTodayHours={stats?.today.hours || 0}
+              streakCount={stats?.streak || 0}
             />
 
-            {/* Productivity Overview Dashboard */}
+            {/* Productivity & Shift Overview */}
             <StatsOverview stats={stats} />
 
             {/* Search, Filter & Category Bar */}
@@ -287,33 +286,28 @@ export const App: React.FC = () => {
               totalLogs={logs.length}
             />
 
-            {/* Timeline of Logs */}
+            {/* Timeline of Shift Logs */}
             <div className="timeline-section">
               {Object.keys(groupedLogs).length === 0 ? (
                 <div className="empty-state">
                   <BookOpen className="empty-icon" />
                   <div className="empty-title">
                     {filters.search || filters.tag || filters.status
-                      ? 'No work logs match your filter'
-                      : 'No work logs yet today'}
+                      ? 'No shift entries match your filter'
+                      : 'No shift logs recorded for today'}
                   </div>
                   <div className="empty-desc">
                     {filters.search || filters.tag || filters.status
                       ? 'Try clearing some filters or searching for another keyword.'
-                      : 'Type what you worked on above to start tracking your daily progress and streak.'}
+                      : 'Add your end-of-shift work summary, task checklists, and handover notes above.'}
                   </div>
                   <button className="btn btn-primary btn-sm" onClick={handleOpenCreate}>
                     <Plus size={14} />
-                    <span>Create Detailed Log</span>
+                    <span>Create Shift Entry</span>
                   </button>
                 </div>
               ) : (
                 Object.entries(groupedLogs).map(([dateKey, dateLogs]) => {
-                  const dayTotalHours =
-                    Math.round(
-                      (dateLogs.reduce((acc, l) => acc + (l.duration_minutes || 0), 0) / 60) * 10
-                    ) / 10;
-
                   return (
                     <div key={dateKey} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div className="date-group-header">
@@ -324,8 +318,7 @@ export const App: React.FC = () => {
                           </span>
                         </span>
                         <span className="date-group-total">
-                          {dayTotalHours > 0 ? `${dayTotalHours}h total` : ''} • {dateLogs.length}{' '}
-                          {dateLogs.length === 1 ? 'entry' : 'entries'}
+                          {dateLogs.length} {dateLogs.length === 1 ? 'shift entry' : 'shift entries'}
                         </span>
                       </div>
 

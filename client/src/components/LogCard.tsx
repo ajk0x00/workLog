@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import type { WorkLog, LogStatus } from '../types/index.js';
 import {
-  Clock,
   Edit2,
   Trash2,
   ChevronDown,
   ChevronUp,
   AlertTriangle,
-  Award,
+  ArrowRightCircle,
 } from 'lucide-react';
 
 interface LogCardProps {
@@ -28,8 +27,6 @@ export const LogCard: React.FC<LogCardProps> = ({
   const [expanded, setExpanded] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
-  const durationHours = Math.round((log.duration_minutes / 60) * 10) / 10;
-
   const cycleStatus = async () => {
     const nextStatus: Record<LogStatus, LogStatus> = {
       done: 'in_progress',
@@ -40,7 +37,7 @@ export const LogCard: React.FC<LogCardProps> = ({
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`Delete log "${log.title}"?`)) {
+    if (window.confirm(`Delete shift log "${log.title}"?`)) {
       try {
         setDeleting(true);
         await onDelete(log.id);
@@ -73,7 +70,7 @@ export const LogCard: React.FC<LogCardProps> = ({
     await onUpdateContent(log.id, newMarkdown);
   };
 
-  // Simple, safe Markdown parser with task list checkboxes and syntax formatting
+  // Safe Markdown parser with task list checkboxes and syntax formatting
   const renderMarkdown = (content: string) => {
     if (!content || !content.trim()) return null;
 
@@ -139,6 +136,12 @@ export const LogCard: React.FC<LogCardProps> = ({
     );
   };
 
+  const getStatusLabel = () => {
+    if (log.status === 'done') return 'Shift Completed';
+    if (log.status === 'in_progress') return 'In Progress / Handover';
+    return 'Blocked';
+  };
+
   return (
     <div className={`log-card status-${log.status}`}>
       <div className="log-card-header">
@@ -146,20 +149,13 @@ export const LogCard: React.FC<LogCardProps> = ({
           className={`log-status-dot ${log.status}`}
           onClick={cycleStatus}
           style={{ cursor: 'pointer' }}
-          title={`Status: ${log.status.replace('_', ' ')} (Click to toggle)`}
+          title={`Status: ${getStatusLabel()} (Click to toggle)`}
         />
 
         <div className="log-title-area">
           <div className="log-title">{log.title}</div>
 
           <div className="log-card-meta">
-            {durationHours > 0 && (
-              <span className="duration-pill">
-                <Clock size={11} />
-                {durationHours}h
-              </span>
-            )}
-
             {/* Tag Pills */}
             {log.tags &&
               log.tags.map((tag) => (
@@ -182,7 +178,7 @@ export const LogCard: React.FC<LogCardProps> = ({
           <button
             className="btn btn-icon btn-sm"
             onClick={() => onEdit(log)}
-            title="Edit work log"
+            title="Edit shift details"
           >
             <Edit2 size={14} />
           </button>
@@ -190,7 +186,7 @@ export const LogCard: React.FC<LogCardProps> = ({
             className="btn btn-icon btn-sm btn-danger-ghost"
             onClick={handleDelete}
             disabled={deleting}
-            title="Delete work log"
+            title="Delete shift log"
           >
             <Trash2 size={14} />
           </button>
@@ -209,22 +205,22 @@ export const LogCard: React.FC<LogCardProps> = ({
       {/* Render Markdown Content if expanded */}
       {expanded && log.content_markdown && renderMarkdown(log.content_markdown)}
 
+      {/* Handover / Next Shift Notes */}
+      {log.achievements && log.achievements.trim() && (
+        <div className="achievement-alert">
+          <ArrowRightCircle size={14} />
+          <span>
+            <strong>Handover / Next Shift:</strong> {log.achievements}
+          </span>
+        </div>
+      )}
+
       {/* Blocker Note */}
       {log.blockers && log.blockers.trim() && (
         <div className="blocker-alert">
           <AlertTriangle size={14} />
           <span>
-            <strong>Blocker:</strong> {log.blockers}
-          </span>
-        </div>
-      )}
-
-      {/* Achievement Note */}
-      {log.achievements && log.achievements.trim() && (
-        <div className="achievement-alert">
-          <Award size={14} />
-          <span>
-            <strong>Achievement:</strong> {log.achievements}
+            <strong>Blockers:</strong> {log.blockers}
           </span>
         </div>
       )}

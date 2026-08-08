@@ -10,7 +10,6 @@ import {
   Download,
   LogOut,
   User as UserIcon,
-  Clock,
   LogIn,
   CheckCircle2,
 } from 'lucide-react';
@@ -33,10 +32,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
-  const todayHours = stats?.today?.hours ?? 0;
-  const goalHours = stats?.dailyGoalHours ?? 8;
-  const goalPercent = Math.min(100, Math.round((todayHours / goalHours) * 100));
-
   return (
     <header className="navbar">
       <div className="navbar-inner">
@@ -50,44 +45,27 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="nav-actions">
           {user ? (
             <>
-              {/* Streak Badge */}
-              <div className="streak-badge" title={`${stats?.streak || 0} day logging streak!`}>
+              {/* Shift Streak Badge */}
+              <div className="streak-badge" title={`${stats?.streak || 0} consecutive shift logging streak!`}>
                 <Flame size={15} />
                 <span>{stats?.streak || 0}d streak</span>
               </div>
 
-              {/* Today's Goal Progress */}
-              <div
-                className="hours-progress-badge"
-                title={`Today: ${todayHours}h / ${goalHours}h goal (${goalPercent}%)`}
-              >
-                <Clock size={14} />
-                <span>
-                  {todayHours}/{goalHours}h
-                </span>
-                <div className="progress-mini-bar">
-                  <div
-                    className="progress-mini-fill"
-                    style={{ width: `${goalPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Standup Modal Trigger */}
+              {/* Standup / Shift Report Trigger */}
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={onOpenStandup}
-                title="Generate Daily Standup Report"
+                title="Generate End-of-Shift / Daily Standup Summary"
               >
                 <ClipboardList size={14} />
-                <span>Standup</span>
+                <span>Shift Report</span>
               </button>
 
               {/* Export Modal Trigger */}
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={onOpenExport}
-                title="Export Logs (Markdown, CSV, JSON)"
+                title="Export Shift Logs (Markdown, CSV, JSON)"
               >
                 <Download size={14} />
                 <span>Export</span>
@@ -102,7 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </button>
 
-              {/* User Profile & Signout */}
+              {/* User Profile */}
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={onOpenProfile}
@@ -112,6 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>{user.username}</span>
               </button>
 
+              {/* Sign Out */}
               <button
                 className="btn btn-icon btn-sm btn-danger-ghost"
                 onClick={() => logout()}

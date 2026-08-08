@@ -172,37 +172,43 @@ logsRouter.post('/standup/generate', async (req: Request, res: Response, next: N
       [userId, prevDateStr]
     );
 
-    // Format standup
-    let markdown = `### 📋 Daily Standup (${todayStr})\n\n`;
+    // Format End-of-Shift / Daily Standup Report
+    let markdown = `### 📋 End-of-Shift / Standup Report (${todayStr})\n\n`;
 
-    markdown += `#### ⏪ What I Did Previous Day (${prevDateStr})\n`;
-    if (prevLogs.length === 0) {
-      markdown += `- No logs recorded.\n`;
-    } else {
-      for (const log of prevLogs) {
-        const tagBadges = log.tags.map((t: any) => `\`#${t.name}\``).join(' ');
-        markdown += `- **${log.title}** ${tagBadges} (${Math.round(log.duration_minutes / 60 * 10) / 10}h)\n`;
-        if (log.achievements) {
-          markdown += `  - 🌟 *Achievement*: ${log.achievements}\n`;
-        }
-      }
-    }
-
-    markdown += `\n#### ⏩ What I'm Doing Today (${todayStr})\n`;
+    markdown += `#### 📋 Shift Accomplishments & Completed Work (${todayStr})\n`;
     if (todayLogs.length === 0) {
-      markdown += `- Planned work items & active tasks.\n`;
+      markdown += `- No logs recorded for this shift yet.\n`;
     } else {
       for (const log of todayLogs) {
         const statusIcon = log.status === 'done' ? '✅' : log.status === 'blocked' ? '🛑' : '⏳';
         const tagBadges = log.tags.map((t: any) => `\`#${t.name}\``).join(' ');
         markdown += `- ${statusIcon} **${log.title}** ${tagBadges}\n`;
+        if (log.content_markdown) {
+          const bullets = log.content_markdown
+            .split('\n')
+            .filter((l: string) => l.trim().startsWith('- ') || l.trim().startsWith('* '))
+            .slice(0, 4)
+            .map((l: string) => `  ${l.trim()}`)
+            .join('\n');
+          if (bullets) markdown += `${bullets}\n`;
+        }
       }
     }
 
-    markdown += `\n#### 🚧 Blockers & Impediments\n`;
+    markdown += `\n#### 🔄 Handover & Next Shift Priorities\n`;
+    const handoverList = todayLogs.filter((l) => l.achievements && l.achievements.trim());
+    if (handoverList.length === 0) {
+      markdown += `- All planned shift items completed. No outstanding handovers.\n`;
+    } else {
+      for (const h of handoverList) {
+        markdown += `- ⏩ **${h.title}**: ${h.achievements}\n`;
+      }
+    }
+
+    markdown += `\n#### 🚧 Blockers & Escalations\n`;
     const blockersList = [...prevLogs, ...todayLogs].filter((l) => l.blockers && l.blockers.trim());
     if (blockersList.length === 0) {
-      markdown += `- None! Smooth sailing 🚀\n`;
+      markdown += `- None! Clean shift 🚀\n`;
     } else {
       for (const b of blockersList) {
         markdown += `- ⚠️ ${b.blockers} *(re: ${b.title})*\n`;

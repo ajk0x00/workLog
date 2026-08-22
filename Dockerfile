@@ -32,12 +32,18 @@ ENV PORT=3000
 COPY package*.json ./
 RUN npm install --omit=dev
 
-# Copy compiled backend and frontend assets
+# Install Python, PostgreSQL driver, and Alembic for database migrations
+RUN apk add --no-cache python3 py3-pip && \
+    pip install --no-cache-dir alembic sqlalchemy psycopg2-binary --break-system-packages
+
+# Copy compiled backend, frontend assets, and Alembic migration files
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/client/dist ./dist/client/dist
 COPY --from=builder /app/server/db/schema.sql ./dist/server/db/schema.sql
+COPY alembic.ini ./
+COPY migrations ./migrations
 
 EXPOSE 3000
 
-CMD ["node", "dist/server/index.js"]
+CMD ["sh", "-c", "alembic upgrade head && node dist/server/index.js"]

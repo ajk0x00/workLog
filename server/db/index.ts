@@ -53,12 +53,22 @@ export async function initDatabase(): Promise<void> {
       ? config.db.connectionString.replace(/:[^:@]+@/, ':****@')
       : `${config.db.host}:${config.db.port}/${config.db.database}`;
     console.log(`[Database Target]: ${targetInfo} (SSL: ${config.db.ssl ? 'enabled' : 'disabled'})`);
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-    await pool.query(schemaSql);
-    console.log('✓ PostgreSQL database schema verified and initialized');
+    
+    // Verify connection by querying database version
+    const dbVer = await pool.query('SELECT version();');
+    console.log(`✓ PostgreSQL database connection verified: ${dbVer.rows[0].version.split(' ')[0]}`);
+
+    // Log current Alembic revision if present
+    try {
+      const alembicRes = await pool.query('SELECT version_num FROM alembic_version;');
+      if (alembicRes.rows.length > 0) {
+        console.log(`📦 Alembic Migration Version: ${alembicRes.rows[0].version_num}`);
+      }
+    } catch {
+      // If alembic_version table doesn't exist yet, it will be initialized by Alembic runner
+    }
   } catch (err: any) {
-    console.error('✗ Failed to initialize database schema:', err.message || err);
+    console.error('✗ Failed to verify database connection:', err.message || err);
     throw err;
   }
 }

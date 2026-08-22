@@ -12,6 +12,10 @@
     "build:client": "npm run build --prefix client",
     "build:server": "tsc -p tsconfig.json",
     "start": "node dist/server/index.js",
+    "db:migrate": "alembic upgrade head",
+    "db:rollback": "alembic downgrade -1",
+    "db:history": "alembic history",
+    "db:current": "alembic current",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"

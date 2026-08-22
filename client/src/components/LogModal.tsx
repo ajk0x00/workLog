@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { WorkLog, Tag, Company, LogStatus } from '../types/index.js';
-import { X, Plus, Eye, Code, AlertTriangle, ArrowRightCircle, Building2 } from 'lucide-react';
+import type { WorkLog, Tag, Company, Skill, LogStatus } from '../types/index.js';
+import { X, Plus, Eye, Code, AlertTriangle, ArrowRightCircle, Building2, Star, Sparkles } from 'lucide-react';
 
 interface LogModalProps {
   isOpen: boolean;
@@ -20,6 +20,13 @@ interface LogModalProps {
   allTags: Tag[];
   companies: Company[];
   onCreateTag: (name: string, color: string) => Promise<Tag>;
+  onCreateSkill?: (data: {
+    name: string;
+    category: string;
+    proficiency: number;
+    yearsExperience: number;
+    lastUsedAt?: string;
+  }) => Promise<Skill>;
 }
 
 export const LogModal: React.FC<LogModalProps> = ({
@@ -30,6 +37,7 @@ export const LogModal: React.FC<LogModalProps> = ({
   allTags,
   companies,
   onCreateTag,
+  onCreateSkill,
 }) => {
   const [title, setTitle] = useState('');
   const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
@@ -43,6 +51,13 @@ export const LogModal: React.FC<LogModalProps> = ({
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#6366f1');
   const [showTagCreator, setShowTagCreator] = useState(false);
+  
+  // Quick Skill Creator state inside Work Log Modal
+  const [showSkillCreator, setShowSkillCreator] = useState(false);
+  const [quickSkillName, setQuickSkillName] = useState('');
+  const [quickSkillCategory, setQuickSkillCategory] = useState('Frontend');
+  const [quickSkillStars, setQuickSkillStars] = useState(3);
+  const [quickSkillSaving, setQuickSkillSaving] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -120,6 +135,26 @@ export const LogModal: React.FC<LogModalProps> = ({
     setContentMarkdown((prev) => `${prev ? prev + '\n' : ''}- [x] Completed task item\n- [ ] Handover / pending item`);
   };
 
+  const handleCreateQuickSkill = async () => {
+    if (!quickSkillName.trim() || !onCreateSkill || quickSkillSaving) return;
+    try {
+      setQuickSkillSaving(true);
+      await onCreateSkill({
+        name: quickSkillName.trim(),
+        category: quickSkillCategory,
+        proficiency: quickSkillStars,
+        yearsExperience: 1.0,
+        lastUsedAt: logDate,
+      });
+      setQuickSkillName('');
+      setShowSkillCreator(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to add skill');
+    } finally {
+      setQuickSkillSaving(false);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-dialog" style={{ maxWidth: 660 }} onClick={(e) => e.stopPropagation()}>
@@ -193,19 +228,106 @@ export const LogModal: React.FC<LogModalProps> = ({
               </div>
             </div>
 
-            {/* Tags Selection & Quick Creator */}
+            {/* Tags & Quick Skill Creator Controls */}
             <div className="form-group">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label className="form-label">Projects & Categories</label>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-                  onClick={() => setShowTagCreator(!showTagCreator)}
-                >
-                  <Plus size={12} /> {showTagCreator ? 'Cancel' : 'New Project Tag'}
-                </button>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {onCreateSkill && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '0.75rem', padding: '2px 6px', color: '#eab308' }}
+                      onClick={() => {
+                        setShowSkillCreator(!showSkillCreator);
+                        setShowTagCreator(false);
+                      }}
+                    >
+                      <Sparkles size={12} /> {showSkillCreator ? 'Cancel Skill' : '+ Add Skill to Matrix'}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                    onClick={() => {
+                      setShowTagCreator(!showTagCreator);
+                      setShowSkillCreator(false);
+                    }}
+                  >
+                    <Plus size={12} /> {showTagCreator ? 'Cancel Tag' : 'New Project Tag'}
+                  </button>
+                </div>
               </div>
+
+              {/* Quick Skill Creator Form */}
+              {showSkillCreator && (
+                <div
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px dashed #eab308',
+                    borderRadius: 'var(--radius-md)',
+                    padding: 10,
+                    marginTop: 6,
+                    marginBottom: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#eab308', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Sparkles size={13} /> Add Skill & Rate Proficiency
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Skill name (e.g. Next.js, Kubernetes)"
+                      value={quickSkillName}
+                      onChange={(e) => setQuickSkillName(e.target.value)}
+                      style={{ flex: 2, minWidth: 140 }}
+                    />
+
+                    <select
+                      className="form-select"
+                      value={quickSkillCategory}
+                      onChange={(e) => setQuickSkillCategory(e.target.value)}
+                      style={{ flex: 1, minWidth: 120 }}
+                    >
+                      <option value="Frontend">Frontend</option>
+                      <option value="Backend">Backend</option>
+                      <option value="DevOps & Cloud">DevOps & Cloud</option>
+                      <option value="Databases">Databases</option>
+                      <option value="Languages">Languages</option>
+                      <option value="Tools & Frameworks">Tools</option>
+                    </select>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={18}
+                          style={{ cursor: 'pointer' }}
+                          color={star <= quickSkillStars ? '#f59e0b' : 'var(--border)'}
+                          fill={star <= quickSkillStars ? '#f59e0b' : 'none'}
+                          onClick={() => setQuickSkillStars(star)}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={handleCreateQuickSkill}
+                      disabled={!quickSkillName.trim() || quickSkillSaving}
+                    >
+                      {quickSkillSaving ? 'Saving...' : 'Add Skill'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {showTagCreator && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 6, marginBottom: 8 }}>

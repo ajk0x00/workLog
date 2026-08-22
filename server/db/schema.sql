@@ -51,6 +51,19 @@ CREATE TABLE IF NOT EXISTS companies (
 
 ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS company_id INT REFERENCES companies(id) ON DELETE SET NULL;
 
+CREATE TABLE IF NOT EXISTS skills (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    category VARCHAR(50) DEFAULT 'General',
+    proficiency INT NOT NULL DEFAULT 3 CHECK (proficiency >= 1 AND proficiency <= 5),
+    years_experience NUMERIC(3, 1) DEFAULT 1.0,
+    last_used_at DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_user_skill UNIQUE (user_id, name)
+);
+
 -- Indexes for lightning fast queries
 CREATE INDEX IF NOT EXISTS idx_work_logs_user_date ON work_logs (user_id, log_date DESC);
 CREATE INDEX IF NOT EXISTS idx_work_logs_user_status ON work_logs (user_id, status);
@@ -58,6 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_tags_user ON tags (user_id);
 CREATE INDEX IF NOT EXISTS idx_log_tags_tag ON log_tags (tag_id);
 CREATE INDEX IF NOT EXISTS idx_companies_user ON companies (user_id);
 CREATE INDEX IF NOT EXISTS idx_work_logs_company ON work_logs (company_id);
+CREATE INDEX IF NOT EXISTS idx_skills_user ON skills (user_id);
 
 -- Clean up legacy unused columns if upgrading existing databases
 ALTER TABLE users DROP COLUMN IF EXISTS daily_goal_hours;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './context/AuthContext.js';
-import type { WorkLog, Tag, Company, StatsData, FilterState, LogStatus } from './types/index.js';
+import type { WorkLog, Tag, Company, Skill, StatsData, FilterState, LogStatus } from './types/index.js';
 import { api } from './utils/api.js';
 import { Navbar } from './components/Navbar.js';
 import { QuickLogBar } from './components/QuickLogBar.js';
@@ -11,6 +11,7 @@ import { ExportModal } from './components/ExportModal.js';
 import { AuthModal } from './components/AuthModal.js';
 import { ProfileModal } from './components/ProfileModal.js';
 import { StatsOverview } from './components/StatsOverview.js';
+import { SkillsPage } from './components/SkillsPage.js';
 import { Plus, BookOpen, Sparkles, LogIn } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -20,7 +21,11 @@ export const App: React.FC = () => {
   const [groupedLogs, setGroupedLogs] = useState<Record<string, WorkLog[]>>({});
   const [tags, setTags] = useState<Tag[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
   const [stats, setStats] = useState<StatsData | null>(null);
+
+  // Tab State
+  const [currentTab, setCurrentTab] = useState<'journal' | 'skills'>('journal');
 
   // Filters
   const [filters, setFilters] = useState<FilterState>({
@@ -59,6 +64,17 @@ export const App: React.FC = () => {
       setCompanies(res.companies);
     } catch (err) {
       console.error('Failed to load companies:', err);
+    }
+  }, [user]);
+
+  // Fetch Skills
+  const fetchSkills = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.get<{ skills: Skill[] }>('/api/skills');
+      setSkills(res.skills);
+    } catch (err) {
+      console.error('Failed to load skills:', err);
     }
   }, [user]);
 
@@ -109,9 +125,10 @@ export const App: React.FC = () => {
       fetchLogs();
       fetchTags();
       fetchCompanies();
+      fetchSkills();
       fetchStats();
     }
-  }, [user, fetchLogs, fetchTags, fetchCompanies, fetchStats]);
+  }, [user, fetchLogs, fetchTags, fetchCompanies, fetchSkills, fetchStats]);
 
   // Add Log
   const handleAddLog = async (data: {
@@ -232,6 +249,30 @@ export const App: React.FC = () => {
     await fetchLogs();
   };
 
+  // Skill Actions
+  const handleCreateSkill = async (data: {
+    name: string;
+    category: string;
+    proficiency: number;
+    yearsExperience: number;
+    lastUsedAt?: string;
+  }): Promise<Skill> => {
+    const res = await api.post<{ skill: Skill }>('/api/skills', data);
+    await fetchSkills();
+    return res.skill;
+  };
+
+  const handleUpdateSkill = async (id: number, data: Partial<Skill>): Promise<Skill> => {
+    const res = await api.put<{ skill: Skill }>(`/api/skills/${id}`, data);
+    await fetchSkills();
+    return res.skill;
+  };
+
+  const handleDeleteSkill = async (id: number): Promise<void> => {
+    await api.delete(`/api/skills/${id}`);
+    await fetchSkills();
+  };
+
   const handleOpenEdit = (log: WorkLog) => {
     setEditingLog(log);
     setLogModalOpen(true);
@@ -294,6 +335,8 @@ export const App: React.FC = () => {
       {/* Top Navigation */}
       <Navbar
         stats={stats}
+        currentTab={currentTab}
+        onSelectTab={setCurrentTab}
         onOpenExport={() => setExportOpen(true)}
         onOpenAuth={() => setAuthOpen(true)}
         onOpenProfile={() => setProfileOpen(true)}
@@ -301,6 +344,14 @@ export const App: React.FC = () => {
 
       <main className="main-content">
         {user ? (
+          currentTab === 'skills' ? (
+            <SkillsPage
+              skills={skills}
+              onCreateSkill={handleCreateSkill}
+              onUpdateSkill={handleUpdateSkill}
+              onDeleteSkill={handleDeleteSkill}
+            />
+          ) : (
           <>
             {/* End of Shift Quick Log Bar */}
             <QuickLogBar
@@ -378,6 +429,7 @@ export const App: React.FC = () => {
               )}
             </div>
           </>
+          )
         ) : (
           /* Guest / Logged Out View */
           <div className="empty-state" style={{ marginTop: 40, padding: '60px 24px' }}>
@@ -411,6 +463,7 @@ export const App: React.FC = () => {
         allTags={tags}
         companies={companies}
         onCreateTag={handleCreateTag}
+        onCreateSkill={handleCreateSkill}
       />
 
       <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} />

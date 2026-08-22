@@ -24,6 +24,18 @@ export interface Tag {
   log_count?: number;
 }
 
+export interface Skill {
+  id: number;
+  user_id: number;
+  name: string;
+  category: string;
+  proficiency: number; // 1 to 5
+  years_experience: number;
+  last_used_at?: string; // 'YYYY-MM-DD'
+  created_at?: string;
+  updated_at?: string;
+}
+
 export type LogStatus = 'done' | 'in_progress' | 'blocked';
 
 export interface WorkLog {

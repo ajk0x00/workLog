@@ -11,10 +11,14 @@ import {
   User as UserIcon,
   LogIn,
   CheckCircle2,
+  BookOpen,
+  Sparkles,
 } from 'lucide-react';
 
 interface NavbarProps {
   stats: StatsData | null;
+  currentTab: 'journal' | 'skills';
+  onSelectTab: (tab: 'journal' | 'skills') => void;
   onOpenExport: () => void;
   onOpenAuth: () => void;
   onOpenProfile: () => void;
@@ -22,6 +26,8 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   stats,
+  currentTab,
+  onSelectTab,
   onOpenExport,
   onOpenAuth,
   onOpenProfile,
@@ -32,11 +38,36 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <div className="brand-logo">
-          <div className="brand-icon">
-            <CheckCircle2 size={18} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div className="brand-logo" onClick={() => onSelectTab('journal')} style={{ cursor: 'pointer' }}>
+            <div className="brand-icon">
+              <CheckCircle2 size={18} />
+            </div>
+            <span>WorkLog</span>
           </div>
-          <span>WorkLog</span>
+
+          {user && (
+            <div className="pill-group">
+              <button
+                type="button"
+                className={`pill-btn ${currentTab === 'journal' ? 'active-done' : ''}`}
+                onClick={() => onSelectTab('journal')}
+                style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <BookOpen size={13} />
+                <span>Work Journal</span>
+              </button>
+              <button
+                type="button"
+                className={`pill-btn ${currentTab === 'skills' ? 'active-done' : ''}`}
+                onClick={() => onSelectTab('skills')}
+                style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Sparkles size={13} color={currentTab === 'skills' ? '#eab308' : undefined} />
+                <span>Skills Matrix</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="nav-actions">

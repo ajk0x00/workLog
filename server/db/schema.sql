@@ -44,3 +44,8 @@ CREATE INDEX IF NOT EXISTS idx_work_logs_user_date ON work_logs (user_id, log_da
 CREATE INDEX IF NOT EXISTS idx_work_logs_user_status ON work_logs (user_id, status);
 CREATE INDEX IF NOT EXISTS idx_tags_user ON tags (user_id);
 CREATE INDEX IF NOT EXISTS idx_log_tags_tag ON log_tags (tag_id);
+
+-- Clean up legacy unused columns if upgrading existing databases
+ALTER TABLE users DROP COLUMN IF EXISTS daily_goal_hours;
+ALTER TABLE work_logs DROP COLUMN IF EXISTS duration_minutes;
+

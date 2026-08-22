@@ -13,10 +13,10 @@ skillsRouter.get('/', async (req: Request, res: Response, next: NextFunction): P
       `SELECT id, name, category, proficiency,
               years_experience::float AS years_experience,
               TO_CHAR(last_used_at, 'YYYY-MM-DD') AS last_used_at,
-              created_at, updated_at
+              is_active, created_at, updated_at
        FROM skills
        WHERE user_id = $1
-       ORDER BY category ASC, proficiency DESC, name ASC`,
+       ORDER BY is_active DESC, category ASC, proficiency DESC, name ASC`,
       [userId]
     );
 
@@ -30,7 +30,7 @@ skillsRouter.get('/', async (req: Request, res: Response, next: NextFunction): P
 skillsRouter.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { name, category, proficiency, yearsExperience, lastUsedAt } = req.body;
+    const { name, category, proficiency, yearsExperience, lastUsedAt, isActive } = req.body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       res.status(400).json({ error: 'Skill name is required.' });
@@ -42,15 +42,16 @@ skillsRouter.post('/', async (req: Request, res: Response, next: NextFunction): 
     const cleanProficiency = Math.max(1, Math.min(5, Number(proficiency) || 3));
     const cleanExperience = Math.max(0, Number(yearsExperience) || 1.0);
     const cleanLastUsed = lastUsedAt || new Date().toISOString().split('T')[0];
+    const cleanIsActive = isActive !== undefined ? Boolean(isActive) : true;
 
     const result = await query(
-      `INSERT INTO skills (user_id, name, category, proficiency, years_experience, last_used_at)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO skills (user_id, name, category, proficiency, years_experience, last_used_at, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, name, category, proficiency,
                  years_experience::float AS years_experience,
                  TO_CHAR(last_used_at, 'YYYY-MM-DD') AS last_used_at,
-                 created_at, updated_at`,
-      [userId, cleanName, cleanCategory, cleanProficiency, cleanExperience, cleanLastUsed]
+                 is_active, created_at, updated_at`,
+      [userId, cleanName, cleanCategory, cleanProficiency, cleanExperience, cleanLastUsed, cleanIsActive]
     );
 
     res.status(201).json({ skill: result.rows[0], message: 'Skill added to matrix.' });
@@ -68,10 +69,11 @@ skillsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction)
   try {
     const userId = req.user!.id;
     const skillId = parseInt(String(req.params.id), 10);
-    const { name, category, proficiency, yearsExperience, lastUsedAt } = req.body;
+    const { name, category, proficiency, yearsExperience, lastUsedAt, isActive } = req.body;
 
     const cleanProficiency = proficiency !== undefined ? Math.max(1, Math.min(5, Number(proficiency))) : undefined;
     const cleanExperience = yearsExperience !== undefined ? Math.max(0, Number(yearsExperience)) : undefined;
+    const cleanIsActive = isActive !== undefined ? Boolean(isActive) : undefined;
 
     const result = await query(
       `UPDATE skills
@@ -80,13 +82,14 @@ skillsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction)
            proficiency = COALESCE($3, proficiency),
            years_experience = COALESCE($4, years_experience),
            last_used_at = COALESCE($5::DATE, last_used_at),
+           is_active = COALESCE($6, is_active),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $6 AND user_id = $7
+       WHERE id = $7 AND user_id = $8
        RETURNING id, name, category, proficiency,
                  years_experience::float AS years_experience,
                  TO_CHAR(last_used_at, 'YYYY-MM-DD') AS last_used_at,
-                 created_at, updated_at`,
-      [name?.trim(), category?.trim(), cleanProficiency, cleanExperience, lastUsedAt, skillId, userId]
+                 is_active, created_at, updated_at`,
+      [name?.trim(), category?.trim(), cleanProficiency, cleanExperience, lastUsedAt, cleanIsActive, skillId, userId]
     );
 
     if (result.rows.length === 0) {

@@ -32,6 +32,7 @@ export interface Skill {
   proficiency: number; // 1 to 5
   years_experience: number;
   last_used_at?: string; // 'YYYY-MM-DD'
+  is_active: boolean;
   created_at?: string;
   updated_at?: string;
 }

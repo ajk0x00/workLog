@@ -10,6 +10,7 @@ import {
   Award,
   Sparkles,
   Layers,
+  Zap,
   X,
 } from 'lucide-react';
 
@@ -21,6 +22,7 @@ interface SkillsPageProps {
     proficiency: number;
     yearsExperience: number;
     lastUsedAt?: string;
+    isActive?: boolean;
   }) => Promise<Skill>;
   onUpdateSkill: (id: number, data: Partial<Skill>) => Promise<Skill>;
   onDeleteSkill: (id: number) => Promise<void>;
@@ -28,6 +30,7 @@ interface SkillsPageProps {
 
 const CATEGORY_PRESETS = [
   'All',
+  '⚡ Actively Using',
   'Frontend',
   'Backend',
   'DevOps & Cloud',
@@ -63,11 +66,13 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
   const [proficiency, setProficiency] = useState(3);
   const [yearsExperience, setYearsExperience] = useState(1.0);
   const [lastUsedAt, setLastUsedAt] = useState(new Date().toISOString().split('T')[0]);
+  const [isActive, setIsActive] = useState(true);
   const [hoverStar, setHoverStar] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Compute Metrics
   const totalSkills = skills.length;
+  const activeSkillsCount = skills.filter((s) => s.is_active).length;
   const masteredSkills = skills.filter((s) => s.proficiency === 5).length;
   const avgRating =
     totalSkills > 0
@@ -89,6 +94,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
     setProficiency(3);
     setYearsExperience(1.0);
     setLastUsedAt(new Date().toISOString().split('T')[0]);
+    setIsActive(true);
     setShowModal(true);
   };
 
@@ -99,6 +105,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
     setProficiency(s.proficiency);
     setYearsExperience(s.years_experience);
     setLastUsedAt(s.last_used_at || new Date().toISOString().split('T')[0]);
+    setIsActive(s.is_active !== undefined ? s.is_active : true);
     setShowModal(true);
   };
 
@@ -115,6 +122,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
           proficiency,
           years_experience: yearsExperience,
           last_used_at: lastUsedAt,
+          is_active: isActive,
         });
       } else {
         await onCreateSkill({
@@ -123,6 +131,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
           proficiency,
           yearsExperience,
           lastUsedAt,
+          isActive,
         });
       }
       setShowModal(false);
@@ -141,6 +150,14 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
     }
   };
 
+  const handleToggleActive = async (skill: Skill) => {
+    try {
+      await onUpdateSkill(skill.id, { is_active: !skill.is_active });
+    } catch (err: any) {
+      console.error('Failed to toggle active status:', err);
+    }
+  };
+
   const handleDelete = async (s: Skill) => {
     if (window.confirm(`Delete skill "${s.name}" from your matrix?`)) {
       try {
@@ -156,8 +173,14 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
     const matchesSearch =
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.category.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory =
-      selectedCategory === 'All' || s.category.toLowerCase() === selectedCategory.toLowerCase();
+    
+    let matchesCategory = true;
+    if (selectedCategory === '⚡ Actively Using') {
+      matchesCategory = s.is_active;
+    } else if (selectedCategory !== 'All') {
+      matchesCategory = s.category.toLowerCase() === selectedCategory.toLowerCase();
+    }
+
     return matchesSearch && matchesCategory;
   });
 
@@ -171,7 +194,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
             Technical Skills & Proficiency Matrix
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
-            Track your tech stack mastery, experience, and flag skills that need brush-ups.
+            Track active tech stack, mastery level, experience, and flag skills that need brush-ups.
           </p>
         </div>
 
@@ -192,6 +215,15 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
 
         <div className="stat-card">
           <div className="stat-label">
+            <Zap size={14} color="var(--accent-primary)" /> Actively Using
+          </div>
+          <div className="stat-value" style={{ color: 'var(--accent-primary)' }}>
+            {activeSkillsCount}
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-label">
             <Award size={14} color="#eab308" /> Mastered (5★)
           </div>
           <div className="stat-value" style={{ color: '#eab308' }}>
@@ -201,9 +233,9 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
 
         <div className="stat-card">
           <div className="stat-label">
-            <Star size={14} color="var(--accent-primary)" /> Avg Rating
+            <Star size={14} color="#f59e0b" /> Avg Rating
           </div>
-          <div className="stat-value">{avgRating} / 5.0</div>
+          <div className="stat-value">{avgRating} ★</div>
         </div>
 
         <div className="stat-card">
@@ -233,12 +265,12 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
 
         <div className="filter-chips-row">
           {CATEGORY_PRESETS.map((cat) => {
-            const isActive = selectedCategory === cat;
+            const isActiveCategory = selectedCategory === cat;
             return (
               <button
                 key={cat}
                 type="button"
-                className={`filter-chip ${isActive ? 'active' : ''}`}
+                className={`filter-chip ${isActiveCategory ? 'active' : ''}`}
                 onClick={() => setSelectedCategory(cat)}
               >
                 {cat}
@@ -271,7 +303,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
                 key={s.id}
                 style={{
                   background: 'var(--bg-card)',
-                  border: '1px solid var(--border)',
+                  border: `1px solid ${s.is_active ? 'var(--accent-primary)' : 'var(--border)'}`,
                   borderRadius: 'var(--radius-lg)',
                   padding: 16,
                   display: 'flex',
@@ -279,12 +311,39 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
                   gap: 12,
                   boxShadow: 'var(--shadow-sm)',
                   position: 'relative',
+                  opacity: s.is_active ? 1 : 0.75,
                 }}
               >
-                {/* Header: Skill Name & Category */}
+                {/* Header: Skill Name, Category & Active Badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0 }}>{s.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0 }}>{s.name}</h3>
+                      {/* Active Status Badge / Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(s)}
+                        style={{
+                          background: s.is_active ? 'var(--accent-primary)' : 'var(--bg-input)',
+                          color: s.is_active ? '#fff' : 'var(--text-muted)',
+                          border: 'none',
+                          borderRadius: 12,
+                          padding: '1px 7px',
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          transition: 'all 0.2s ease',
+                        }}
+                        title={s.is_active ? 'Actively using (Click to mark inactive)' : 'Inactive / Inactive stack (Click to activate)'}
+                      >
+                        <Zap size={10} />
+                        {s.is_active ? 'Active' : 'Inactive'}
+                      </button>
+                    </div>
+
                     <span
                       style={{
                         fontSize: '0.75rem',
@@ -293,7 +352,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
                         padding: '2px 8px',
                         borderRadius: 10,
                         display: 'inline-block',
-                        marginTop: 4,
+                        marginTop: 6,
                       }}
                     >
                       {s.category}
@@ -468,15 +527,28 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
                   </div>
                 </div>
 
-                {/* Last Used At */}
-                <div className="form-group">
-                  <label className="form-label">Last Used Date (Helps flag skills for brush up)</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={lastUsedAt}
-                    onChange={(e) => setLastUsedAt(e.target.value)}
-                  />
+                {/* Last Used At & Is Active Checkbox */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="form-group">
+                    <label className="form-label">Last Used Date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={lastUsedAt}
+                      onChange={(e) => setLastUsedAt(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ display: 'flex', alignItems: 'center', marginTop: 22 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.85rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={(e) => setIsActive(e.target.checked)}
+                      />
+                      <span>⚡ Actively Using</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 

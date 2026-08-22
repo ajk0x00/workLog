@@ -59,10 +59,13 @@ CREATE TABLE IF NOT EXISTS skills (
     proficiency INT NOT NULL DEFAULT 3 CHECK (proficiency >= 1 AND proficiency <= 5),
     years_experience NUMERIC(3, 1) DEFAULT 1.0,
     last_used_at DATE DEFAULT CURRENT_DATE,
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_user_skill UNIQUE (user_id, name)
 );
+
+ALTER TABLE skills ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
 -- Indexes for lightning fast queries
 CREATE INDEX IF NOT EXISTS idx_work_logs_user_date ON work_logs (user_id, log_date DESC);

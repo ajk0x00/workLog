@@ -1,11 +1,12 @@
 import React from 'react';
-import type { FilterState, Tag } from '../types/index.js';
+import type { FilterState, Tag, Company } from '../types/index.js';
 import { Search, X, Check, Clock, AlertCircle } from 'lucide-react';
 
 interface FilterBarProps {
   filters: FilterState;
   onFilterChange: (newFilters: Partial<FilterState>) => void;
   tags: Tag[];
+  companies: Company[];
   onClearFilters: () => void;
   totalLogs: number;
 }
@@ -14,12 +15,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   filters,
   onFilterChange,
   tags,
+  companies,
   onClearFilters,
   totalLogs,
 }) => {
   const hasActiveFilters =
     filters.search ||
     filters.tag ||
+    filters.companyId ||
     filters.status ||
     filters.datePreset !== 'all' ||
     filters.startDate ||
@@ -148,6 +151,22 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             Blocked
           </button>
         </div>
+
+        {/* Company Filters */}
+        {companies.map((c) => {
+          const isActive = filters.companyId === String(c.id);
+          return (
+            <button
+              key={c.id}
+              type="button"
+              className={`filter-chip ${isActive ? 'active' : ''}`}
+              onClick={() => onFilterChange({ companyId: isActive ? '' : String(c.id) })}
+              style={isActive ? { borderColor: c.color || '#3b82f6', color: c.color || '#3b82f6' } : {}}
+            >
+              🏢 {c.name} {c.log_count !== undefined ? `(${c.log_count})` : ''}
+            </button>
+          );
+        })}
 
         {/* Tag Filters */}
         {tags.map((t) => {

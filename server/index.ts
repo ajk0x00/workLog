@@ -10,6 +10,7 @@ import { authRouter } from './routes/auth.js';
 import { logsRouter } from './routes/logs.js';
 import { tagsRouter } from './routes/tags.js';
 import { statsRouter } from './routes/stats.js';
+import { companiesRouter } from './routes/companies.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,6 +43,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/logs', logsRouter);
 app.use('/api/tags', tagsRouter);
 app.use('/api/stats', statsRouter);
+app.use('/api/companies', companiesRouter);
 
 // Resolve static frontend assets with fallback search
 const possibleClientPaths = [

@@ -17,8 +17,13 @@ async function fetchLogsWithTags(whereClause: string, params: any[]) {
       wl.status,
       wl.blockers,
       wl.achievements,
+      wl.company_id,
       wl.created_at,
       wl.updated_at,
+      CASE
+        WHEN c.id IS NOT NULL THEN JSON_BUILD_OBJECT('id', c.id, 'name', c.name, 'color', c.color, 'is_current', c.is_current)
+        ELSE NULL
+      END AS company,
       COALESCE(
         JSON_AGG(
           JSON_BUILD_OBJECT('id', t.id, 'name', t.name, 'color', t.color)
@@ -26,10 +31,11 @@ async function fetchLogsWithTags(whereClause: string, params: any[]) {
         '[]'
       ) AS tags
     FROM work_logs wl
+    LEFT JOIN companies c ON wl.company_id = c.id
     LEFT JOIN log_tags lt ON wl.id = lt.log_id
     LEFT JOIN tags t ON lt.tag_id = t.id
     ${whereClause}
-    GROUP BY wl.id
+    GROUP BY wl.id, c.id
     ORDER BY wl.log_date DESC, wl.created_at DESC
   `;
   const result = await query(sql, params);
@@ -77,7 +83,7 @@ async function attachTagsToLog(client: any, userId: number, logId: number, tagNa
 logsRouter.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { search, startDate, endDate, tag, status, limit, offset } = req.query;
+    const { search, startDate, endDate, tag, companyId, status, limit, offset } = req.query;
 
     const conditions: string[] = ['wl.user_id = $1'];
     const params: any[] = [userId];
@@ -98,6 +104,12 @@ logsRouter.get('/', async (req: Request, res: Response, next: NextFunction): Pro
     if (status && (status === 'done' || status === 'in_progress' || status === 'blocked')) {
       conditions.push(`wl.status = $${paramIndex}`);
       params.push(status);
+      paramIndex++;
+    }
+
+    if (companyId && !isNaN(Number(companyId))) {
+      conditions.push(`wl.company_id = $${paramIndex}`);
+      params.push(Number(companyId));
       paramIndex++;
     }
 
@@ -158,10 +170,11 @@ logsRouter.get('/export/:format', async (req: Request, res: Response, next: Next
     if (format === 'csv') {
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="worklog-export.csv"');
-      let csv = 'ID,Date,Title,Status,Tags,Blockers,Achievements,Created At\n';
+      let csv = 'ID,Date,Title,Company,Status,Tags,Blockers,Achievements,Created At\n';
       for (const l of logs) {
         const tagNames = l.tags.map((t: any) => t.name).join('; ');
-        csv += `"${l.id}","${l.log_date}","${(l.title || '').replace(/"/g, '""')}","${l.status}","${tagNames}","${(l.blockers || '').replace(/"/g, '""')}","${(l.achievements || '').replace(/"/g, '""')}","${l.created_at}"\n`;
+        const compName = l.company?.name || '';
+        csv += `"${l.id}","${l.log_date}","${(l.title || '').replace(/"/g, '""')}","${compName}","${l.status}","${tagNames}","${(l.blockers || '').replace(/"/g, '""')}","${(l.achievements || '').replace(/"/g, '""')}","${l.created_at}"\n`;
       }
       res.send(csv);
       return;
@@ -173,8 +186,9 @@ logsRouter.get('/export/:format', async (req: Request, res: Response, next: Next
       let md = `# 📝 Work Log Export\n\n*Generated on ${new Date().toLocaleDateString()}*\n\n`;
       for (const l of logs) {
         const tags = l.tags.map((t: any) => `\`#${t.name}\``).join(' ');
+        const comp = l.company ? ` | **Company**: ${l.company.name}` : '';
         md += `## [${l.log_date}] ${l.title} (${l.status.toUpperCase()})\n`;
-        md += `- **Tags**: ${tags || 'None'}\n\n`;
+        md += `- **Tags**: ${tags || 'None'}${comp}\n\n`;
         if (l.content_markdown) {
           md += `${l.content_markdown}\n\n`;
         }
@@ -226,6 +240,7 @@ logsRouter.post('/', async (req: Request, res: Response, next: NextFunction): Pr
       status,
       blockers,
       achievements,
+      companyId,
       tags,
     } = req.body;
 
@@ -238,11 +253,12 @@ logsRouter.post('/', async (req: Request, res: Response, next: NextFunction): Pr
 
     const cleanDate = logDate || new Date().toISOString().split('T')[0];
     const cleanStatus = ['done', 'in_progress', 'blocked'].includes(status) ? status : 'done';
+    const cleanCompanyId = companyId && !isNaN(Number(companyId)) ? Number(companyId) : null;
 
     const insertSql = `
-      INSERT INTO work_logs (user_id, log_date, title, content_markdown, status, blockers, achievements)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, user_id, TO_CHAR(log_date, 'YYYY-MM-DD') AS log_date, title, content_markdown, status, blockers, achievements, created_at, updated_at
+      INSERT INTO work_logs (user_id, log_date, title, content_markdown, status, blockers, achievements, company_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, user_id, TO_CHAR(log_date, 'YYYY-MM-DD') AS log_date, title, content_markdown, status, blockers, achievements, company_id, created_at, updated_at
     `;
 
     const result = await client.query(insertSql, [
@@ -253,6 +269,7 @@ logsRouter.post('/', async (req: Request, res: Response, next: NextFunction): Pr
       cleanStatus,
       blockers?.trim() || '',
       achievements?.trim() || '',
+      cleanCompanyId,
     ]);
 
     const createdLog = result.rows[0];
@@ -293,6 +310,7 @@ logsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction): 
       status,
       blockers,
       achievements,
+      companyId,
       tags,
     } = req.body;
 
@@ -300,6 +318,7 @@ logsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction): 
 
     const cleanDate = logDate ? logDate : undefined;
     const cleanStatus = status && ['done', 'in_progress', 'blocked'].includes(status) ? status : undefined;
+    const cleanCompanyId = companyId !== undefined ? (companyId && !isNaN(Number(companyId)) ? Number(companyId) : null) : undefined;
 
     const updateSql = `
       UPDATE work_logs
@@ -309,8 +328,9 @@ logsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction): 
           status = COALESCE($4, status),
           blockers = COALESCE($5, blockers),
           achievements = COALESCE($6, achievements),
+          company_id = CASE WHEN $7::boolean THEN $8::int ELSE company_id END,
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = $7 AND user_id = $8
+      WHERE id = $9 AND user_id = $10
       RETURNING id
     `;
 
@@ -321,6 +341,8 @@ logsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction): 
       cleanStatus,
       blockers,
       achievements,
+      cleanCompanyId !== undefined,
+      cleanCompanyId ?? null,
       logId,
       userId,
     ]);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './context/AuthContext.js';
-import type { WorkLog, Tag, StatsData, FilterState, LogStatus } from './types/index.js';
+import type { WorkLog, Tag, Company, StatsData, FilterState, LogStatus } from './types/index.js';
 import { api } from './utils/api.js';
 import { Navbar } from './components/Navbar.js';
 import { QuickLogBar } from './components/QuickLogBar.js';
@@ -19,6 +19,7 @@ export const App: React.FC = () => {
   const [logs, setLogs] = useState<WorkLog[]>([]);
   const [groupedLogs, setGroupedLogs] = useState<Record<string, WorkLog[]>>({});
   const [tags, setTags] = useState<Tag[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [stats, setStats] = useState<StatsData | null>(null);
 
   // Filters
@@ -27,6 +28,7 @@ export const App: React.FC = () => {
     startDate: '',
     endDate: '',
     tag: '',
+    companyId: '',
     status: '',
     datePreset: 'all',
   });
@@ -46,6 +48,17 @@ export const App: React.FC = () => {
       setTags(res.tags);
     } catch (err) {
       console.error('Failed to load tags:', err);
+    }
+  }, [user]);
+
+  // Fetch Companies
+  const fetchCompanies = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.get<{ companies: Company[] }>('/api/companies');
+      setCompanies(res.companies);
+    } catch (err) {
+      console.error('Failed to load companies:', err);
     }
   }, [user]);
 
@@ -74,6 +87,7 @@ export const App: React.FC = () => {
       if (filters.startDate) params.set('startDate', filters.startDate);
       if (filters.endDate) params.set('endDate', filters.endDate);
       if (filters.tag) params.set('tag', filters.tag);
+      if (filters.companyId) params.set('companyId', filters.companyId);
       if (filters.status) params.set('status', filters.status);
 
       const res = await api.get<{
@@ -94,14 +108,16 @@ export const App: React.FC = () => {
     if (user) {
       fetchLogs();
       fetchTags();
+      fetchCompanies();
       fetchStats();
     }
-  }, [user, fetchLogs, fetchTags, fetchStats]);
+  }, [user, fetchLogs, fetchTags, fetchCompanies, fetchStats]);
 
   // Add Log
   const handleAddLog = async (data: {
     title: string;
     status: LogStatus;
+    companyId?: number | null;
     tags: string[];
     contentMarkdown?: string;
   }) => {
@@ -109,11 +125,13 @@ export const App: React.FC = () => {
       await api.post('/api/logs', {
         title: data.title,
         status: data.status,
+        companyId: data.companyId,
         tags: data.tags,
         contentMarkdown: data.contentMarkdown,
       });
       await fetchLogs();
       await fetchTags();
+      await fetchCompanies();
       await fetchStats();
     } catch (err: any) {
       if (err?.statusCode === 401 || err?.message?.includes('Authentication')) {
@@ -132,6 +150,7 @@ export const App: React.FC = () => {
     status: LogStatus;
     blockers: string;
     achievements: string;
+    companyId?: number | null;
     tags: string[];
   }) => {
     try {
@@ -142,6 +161,7 @@ export const App: React.FC = () => {
       }
       await fetchLogs();
       await fetchTags();
+      await fetchCompanies();
       await fetchStats();
     } catch (err: any) {
       if (err?.statusCode === 401 || err?.message?.includes('Authentication')) {
@@ -191,6 +211,27 @@ export const App: React.FC = () => {
     return res.tag;
   };
 
+  // Company Actions
+  const handleCreateCompany = async (name: string, color: string, isCurrent: boolean): Promise<Company> => {
+    const res = await api.post<{ company: Company }>('/api/companies', { name, color, isCurrent });
+    await fetchCompanies();
+    await fetchLogs();
+    return res.company;
+  };
+
+  const handleUpdateCompany = async (id: number, data: Partial<Company>): Promise<Company> => {
+    const res = await api.put<{ company: Company }>(`/api/companies/${id}`, data);
+    await fetchCompanies();
+    await fetchLogs();
+    return res.company;
+  };
+
+  const handleDeleteCompany = async (id: number): Promise<void> => {
+    await api.delete(`/api/companies/${id}`);
+    await fetchCompanies();
+    await fetchLogs();
+  };
+
   const handleOpenEdit = (log: WorkLog) => {
     setEditingLog(log);
     setLogModalOpen(true);
@@ -207,6 +248,7 @@ export const App: React.FC = () => {
       startDate: '',
       endDate: '',
       tag: '',
+      companyId: '',
       status: '',
       datePreset: 'all',
     });
@@ -263,6 +305,7 @@ export const App: React.FC = () => {
             {/* End of Shift Quick Log Bar */}
             <QuickLogBar
               tags={tags}
+              companies={companies}
               onAddLog={handleAddLog}
               onOpenDetailedModal={handleOpenCreate}
               streakCount={stats?.streak || 0}
@@ -276,6 +319,7 @@ export const App: React.FC = () => {
               filters={filters}
               onFilterChange={(newFilters) => setFilters((prev) => ({ ...prev, ...newFilters }))}
               tags={tags}
+              companies={companies}
               onClearFilters={handleClearFilters}
               totalLogs={logs.length}
             />
@@ -365,6 +409,7 @@ export const App: React.FC = () => {
         onSave={handleSaveDetailedLog}
         initialLog={editingLog}
         allTags={tags}
+        companies={companies}
         onCreateTag={handleCreateTag}
       />
 
@@ -372,7 +417,14 @@ export const App: React.FC = () => {
 
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
 
-      <ProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
+      <ProfileModal
+        isOpen={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        companies={companies}
+        onCreateCompany={handleCreateCompany}
+        onUpdateCompany={handleUpdateCompany}
+        onDeleteCompany={handleDeleteCompany}
+      />
     </div>
   );
 };

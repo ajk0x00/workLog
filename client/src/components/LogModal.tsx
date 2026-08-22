@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { WorkLog, Tag, LogStatus } from '../types/index.js';
-import { X, Plus, Eye, Code, AlertTriangle, ArrowRightCircle } from 'lucide-react';
+import type { WorkLog, Tag, Company, LogStatus } from '../types/index.js';
+import { X, Plus, Eye, Code, AlertTriangle, ArrowRightCircle, Building2 } from 'lucide-react';
 
 interface LogModalProps {
   isOpen: boolean;
@@ -13,10 +13,12 @@ interface LogModalProps {
     status: LogStatus;
     blockers: string;
     achievements: string;
+    companyId?: number | null;
     tags: string[];
   }) => Promise<void>;
   initialLog?: WorkLog | null;
   allTags: Tag[];
+  companies: Company[];
   onCreateTag: (name: string, color: string) => Promise<Tag>;
 }
 
@@ -26,6 +28,7 @@ export const LogModal: React.FC<LogModalProps> = ({
   onSave,
   initialLog,
   allTags,
+  companies,
   onCreateTag,
 }) => {
   const [title, setTitle] = useState('');
@@ -34,6 +37,7 @@ export const LogModal: React.FC<LogModalProps> = ({
   const [contentMarkdown, setContentMarkdown] = useState('');
   const [blockers, setBlockers] = useState('');
   const [achievements, setAchievements] = useState('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [newTagName, setNewTagName] = useState('');
@@ -42,6 +46,7 @@ export const LogModal: React.FC<LogModalProps> = ({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    const currentComp = companies.find((c) => c.is_current);
     if (initialLog) {
       setTitle(initialLog.title);
       setLogDate(initialLog.log_date || new Date().toISOString().split('T')[0]);
@@ -49,6 +54,9 @@ export const LogModal: React.FC<LogModalProps> = ({
       setContentMarkdown(initialLog.content_markdown || '');
       setBlockers(initialLog.blockers || '');
       setAchievements(initialLog.achievements || '');
+      setSelectedCompanyId(
+        initialLog.company_id ? String(initialLog.company_id) : currentComp ? String(currentComp.id) : ''
+      );
       setSelectedTags((initialLog.tags || []).map((t) => t.name));
     } else {
       setTitle('');
@@ -57,9 +65,10 @@ export const LogModal: React.FC<LogModalProps> = ({
       setContentMarkdown('');
       setBlockers('');
       setAchievements('');
+      setSelectedCompanyId(currentComp ? String(currentComp.id) : '');
       setSelectedTags([]);
     }
-  }, [initialLog, isOpen]);
+  }, [initialLog, isOpen, companies]);
 
   if (!isOpen) return null;
 
@@ -96,6 +105,7 @@ export const LogModal: React.FC<LogModalProps> = ({
         status,
         blockers,
         achievements,
+        companyId: selectedCompanyId ? Number(selectedCompanyId) : null,
         tags: selectedTags,
       });
       onClose();
@@ -136,8 +146,29 @@ export const LogModal: React.FC<LogModalProps> = ({
               />
             </div>
 
-            {/* Shift Date & Status */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {/* Company, Shift Date & Status */}
+            <div style={{ display: 'grid', gridTemplateColumns: companies.length > 0 ? '1fr 1fr 1fr' : '1fr 1fr', gap: 12 }}>
+              {companies.length > 0 && (
+                <div className="form-group">
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Building2 size={13} color="var(--accent-primary)" />
+                    <span>Company / Employer</span>
+                  </label>
+                  <select
+                    className="form-select"
+                    value={selectedCompanyId}
+                    onChange={(e) => setSelectedCompanyId(e.target.value)}
+                  >
+                    <option value="">(None / Personal)</option>
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        🏢 {c.name} {c.is_current ? '(Current)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label">Shift Date</label>
                 <input
@@ -155,9 +186,9 @@ export const LogModal: React.FC<LogModalProps> = ({
                   value={status}
                   onChange={(e) => setStatus(e.target.value as LogStatus)}
                 >
-                  <option value="done">✅ Shift Completed (All Goals Met)</option>
-                  <option value="in_progress">⏳ In Progress / Handover Required</option>
-                  <option value="blocked">🛑 Blocked / Needs Follow-up</option>
+                  <option value="done">✅ Shift Completed</option>
+                  <option value="in_progress">⏳ In Progress / Handover</option>
+                  <option value="blocked">🛑 Blocked</option>
                 </select>
               </div>
             </div>

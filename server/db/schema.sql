@@ -39,13 +39,60 @@ CREATE TABLE IF NOT EXISTS log_tags (
     PRIMARY KEY (log_id, tag_id)
 );
 
+CREATE TABLE IF NOT EXISTS companies (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    color VARCHAR(20) DEFAULT '#3b82f6',
+    is_current BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_user_company UNIQUE (user_id, name)
+);
+
+ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS company_id INT REFERENCES companies(id) ON DELETE SET NULL;
+
 -- Indexes for lightning fast queries
 CREATE INDEX IF NOT EXISTS idx_work_logs_user_date ON work_logs (user_id, log_date DESC);
 CREATE INDEX IF NOT EXISTS idx_work_logs_user_status ON work_logs (user_id, status);
 CREATE INDEX IF NOT EXISTS idx_tags_user ON tags (user_id);
 CREATE INDEX IF NOT EXISTS idx_log_tags_tag ON log_tags (tag_id);
+CREATE INDEX IF NOT EXISTS idx_companies_user ON companies (user_id);
+CREATE INDEX IF NOT EXISTS idx_work_logs_company ON work_logs (company_id);
 
 -- Clean up legacy unused columns if upgrading existing databases
 ALTER TABLE users DROP COLUMN IF EXISTS daily_goal_hours;
 ALTER TABLE work_logs DROP COLUMN IF EXISTS duration_minutes;
+
+-- Migration: Automatically migrate existing '#glowing' and '#qburst' tags to Companies
+DO $$
+BEGIN
+    -- Create 'Glowing' company for users who have 'glowing' tag
+    INSERT INTO companies (user_id, name, color, is_current)
+    SELECT DISTINCT user_id, 'Glowing', '#3b82f6', true
+    FROM tags WHERE LOWER(name) = 'glowing'
+    ON CONFLICT (user_id, name) DO NOTHING;
+
+    -- Map work_logs with 'glowing' tag to 'Glowing' company
+    UPDATE work_logs wl
+    SET company_id = c.id
+    FROM log_tags lt
+    JOIN tags t ON lt.tag_id = t.id
+    JOIN companies c ON c.user_id = t.user_id AND c.name = 'Glowing'
+    WHERE wl.id = lt.log_id AND LOWER(t.name) = 'glowing' AND wl.company_id IS NULL;
+
+    -- Create 'QBurst' company for users who have 'qburst' tag
+    INSERT INTO companies (user_id, name, color, is_current)
+    SELECT DISTINCT user_id, 'QBurst', '#8b5cf6', false
+    FROM tags WHERE LOWER(name) = 'qburst'
+    ON CONFLICT (user_id, name) DO NOTHING;
+
+    -- Map work_logs with 'qburst' tag to 'QBurst' company
+    UPDATE work_logs wl
+    SET company_id = c.id
+    FROM log_tags lt
+    JOIN tags t ON lt.tag_id = t.id
+    JOIN companies c ON c.user_id = t.user_id AND c.name = 'QBurst'
+    WHERE wl.id = lt.log_id AND LOWER(t.name) = 'qburst' AND wl.company_id IS NULL;
+END $$;
+
 

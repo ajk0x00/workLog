@@ -7,6 +7,15 @@ export interface User {
   created_at: string;
 }
 
+export interface Company {
+  id: number;
+  name: string;
+  color: string;
+  is_current: boolean;
+  created_at?: string;
+  log_count?: number;
+}
+
 export interface Tag {
   id: number;
   name: string;
@@ -26,6 +35,8 @@ export interface WorkLog {
   status: LogStatus;
   blockers?: string;
   achievements?: string;
+  company_id?: number | null;
+  company?: Company | null;
   created_at: string;
   updated_at: string;
   tags: Tag[];
@@ -63,6 +74,7 @@ export interface FilterState {
   startDate: string;
   endDate: string;
   tag: string;
+  companyId: string;
   status: string;
   datePreset: 'all' | 'today' | 'yesterday' | 'week' | 'month';
 }

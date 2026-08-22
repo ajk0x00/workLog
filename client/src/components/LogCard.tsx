@@ -155,7 +155,25 @@ export const LogCard: React.FC<LogCardProps> = ({
         <div className="log-title-area">
           <div className="log-title">{log.title}</div>
 
-          <div className="log-card-meta">
+          <div className="log-card-meta" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            {/* Company Badge */}
+            {log.company && (
+              <span
+                className="tag-badge"
+                style={{
+                  borderColor: `${log.company.color || '#3b82f6'}60`,
+                  color: log.company.color || 'var(--accent-primary)',
+                  background: `${log.company.color || '#3b82f6'}18`,
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+              >
+                🏢 {log.company.name}
+              </span>
+            )}
+
             {/* Tag Pills */}
             {log.tags &&
               log.tags.map((tag) => (

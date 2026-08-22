@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import type { Tag, LogStatus } from '../types/index.js';
-import { Plus, SlidersHorizontal, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import type { Tag, Company, LogStatus } from '../types/index.js';
+import { Plus, SlidersHorizontal, CheckCircle2, Clock, AlertTriangle, Building2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface QuickLogBarProps {
   tags: Tag[];
+  companies: Company[];
   onAddLog: (data: {
     title: string;
     status: LogStatus;
+    companyId?: number | null;
     tags: string[];
     contentMarkdown?: string;
   }) => Promise<void>;
@@ -17,11 +19,16 @@ interface QuickLogBarProps {
 
 export const QuickLogBar: React.FC<QuickLogBarProps> = ({
   tags,
+  companies,
   onAddLog,
   onOpenDetailedModal,
 }) => {
+  const currentCompany = companies.find((c) => c.is_current);
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<LogStatus>('done');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(
+    currentCompany ? String(currentCompany.id) : ''
+  );
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,6 +47,7 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
       await onAddLog({
         title: title.trim(),
         status,
+        companyId: selectedCompanyId ? Number(selectedCompanyId) : null,
         tags: selectedTags,
       });
 
@@ -93,7 +101,28 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
         </div>
 
         <div className="quick-log-bottom">
-          <div className="quick-controls">
+          <div className="quick-controls" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            {/* Company Selection Dropdown */}
+            {companies.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Building2 size={13} color="var(--accent-primary)" />
+                <select
+                  className="form-select"
+                  style={{ padding: '4px 8px', fontSize: '0.8rem', height: 30 }}
+                  value={selectedCompanyId}
+                  onChange={(e) => setSelectedCompanyId(e.target.value)}
+                  title="Assign to company"
+                >
+                  <option value="">(No Company)</option>
+                  {companies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      🏢 {c.name} {c.is_current ? '(Current)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Shift Status Selector */}
             <div className="pill-group">
               <button

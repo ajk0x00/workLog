@@ -12,7 +12,7 @@ skillsRouter.get('/', async (req: Request, res: Response, next: NextFunction): P
     const result = await query(
       `SELECT id, name, category, proficiency,
               years_experience::float AS years_experience,
-              TO_CHAR(last_used_at, 'YYYY-MM-DD') AS last_used_at,
+              COALESCE(last_used_year, EXTRACT(YEAR FROM COALESCE(last_used_at, CURRENT_DATE))::int) AS last_used_year,
               is_active, created_at, updated_at
        FROM skills
        WHERE user_id = $1
@@ -30,28 +30,29 @@ skillsRouter.get('/', async (req: Request, res: Response, next: NextFunction): P
 skillsRouter.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { name, category, proficiency, yearsExperience, lastUsedAt, isActive } = req.body;
+    const { name, category, proficiency, yearsExperience, lastUsedYear, lastUsedAt, isActive } = req.body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       res.status(400).json({ error: 'Skill name is required.' });
       return;
     }
 
+    const currentYear = new Date().getFullYear();
     const cleanName = name.trim();
     const cleanCategory = category?.trim() || 'General';
     const cleanProficiency = Math.max(1, Math.min(5, Number(proficiency) || 3));
     const cleanExperience = Math.max(0, Number(yearsExperience) || 1.0);
-    const cleanLastUsed = lastUsedAt || new Date().toISOString().split('T')[0];
+    const cleanLastUsedYear = Number(lastUsedYear) || (lastUsedAt ? new Date(lastUsedAt).getFullYear() : currentYear);
     const cleanIsActive = isActive !== undefined ? Boolean(isActive) : true;
 
     const result = await query(
-      `INSERT INTO skills (user_id, name, category, proficiency, years_experience, last_used_at, is_active)
+      `INSERT INTO skills (user_id, name, category, proficiency, years_experience, last_used_year, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, name, category, proficiency,
                  years_experience::float AS years_experience,
-                 TO_CHAR(last_used_at, 'YYYY-MM-DD') AS last_used_at,
+                 COALESCE(last_used_year, $6) AS last_used_year,
                  is_active, created_at, updated_at`,
-      [userId, cleanName, cleanCategory, cleanProficiency, cleanExperience, cleanLastUsed, cleanIsActive]
+      [userId, cleanName, cleanCategory, cleanProficiency, cleanExperience, cleanLastUsedYear, cleanIsActive]
     );
 
     res.status(201).json({ skill: result.rows[0], message: 'Skill added to matrix.' });
@@ -69,10 +70,11 @@ skillsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction)
   try {
     const userId = req.user!.id;
     const skillId = parseInt(String(req.params.id), 10);
-    const { name, category, proficiency, yearsExperience, lastUsedAt, isActive } = req.body;
+    const { name, category, proficiency, yearsExperience, lastUsedYear, lastUsedAt, isActive } = req.body;
 
     const cleanProficiency = proficiency !== undefined ? Math.max(1, Math.min(5, Number(proficiency))) : undefined;
     const cleanExperience = yearsExperience !== undefined ? Math.max(0, Number(yearsExperience)) : undefined;
+    const cleanLastUsedYear = lastUsedYear !== undefined ? Number(lastUsedYear) : (lastUsedAt ? new Date(lastUsedAt).getFullYear() : undefined);
     const cleanIsActive = isActive !== undefined ? Boolean(isActive) : undefined;
 
     const result = await query(
@@ -81,15 +83,15 @@ skillsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction)
            category = COALESCE($2, category),
            proficiency = COALESCE($3, proficiency),
            years_experience = COALESCE($4, years_experience),
-           last_used_at = COALESCE($5::DATE, last_used_at),
+           last_used_year = COALESCE($5, last_used_year),
            is_active = COALESCE($6, is_active),
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $7 AND user_id = $8
        RETURNING id, name, category, proficiency,
                  years_experience::float AS years_experience,
-                 TO_CHAR(last_used_at, 'YYYY-MM-DD') AS last_used_at,
+                 COALESCE(last_used_year, EXTRACT(YEAR FROM CURRENT_DATE)::int) AS last_used_year,
                  is_active, created_at, updated_at`,
-      [name?.trim(), category?.trim(), cleanProficiency, cleanExperience, lastUsedAt, cleanIsActive, skillId, userId]
+      [name?.trim(), category?.trim(), cleanProficiency, cleanExperience, cleanLastUsedYear, cleanIsActive, skillId, userId]
     );
 
     if (result.rows.length === 0) {

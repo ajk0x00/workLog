@@ -255,7 +255,8 @@ export const App: React.FC = () => {
     category: string;
     proficiency: number;
     yearsExperience: number;
-    lastUsedAt?: string;
+    lastUsedYear?: number;
+    isActive?: boolean;
   }): Promise<Skill> => {
     const res = await api.post<{ skill: Skill }>('/api/skills', data);
     await fetchSkills();

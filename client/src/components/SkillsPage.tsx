@@ -21,7 +21,7 @@ interface SkillsPageProps {
     category: string;
     proficiency: number;
     yearsExperience: number;
-    lastUsedAt?: string;
+    lastUsedYear?: number;
     isActive?: boolean;
   }) => Promise<Skill>;
   onUpdateSkill: (id: number, data: Partial<Skill>) => Promise<Skill>;
@@ -55,6 +55,8 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
   onUpdateSkill,
   onDeleteSkill,
 }) => {
+  const currentYear = new Date().getFullYear();
+
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -65,7 +67,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
   const [category, setCategory] = useState('Frontend');
   const [proficiency, setProficiency] = useState(3);
   const [yearsExperience, setYearsExperience] = useState(1.0);
-  const [lastUsedAt, setLastUsedAt] = useState(new Date().toISOString().split('T')[0]);
+  const [lastUsedYear, setLastUsedYear] = useState<number>(currentYear);
   const [isActive, setIsActive] = useState(true);
   const [hoverStar, setHoverStar] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -79,12 +81,10 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
       ? (skills.reduce((acc, s) => acc + s.proficiency, 0) / totalSkills).toFixed(1)
       : '0.0';
 
-  // Calculate skills needing brush up (last used > 180 days ago)
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setDate(sixMonthsAgo.getDate() - 180);
+  // Calculate skills needing brush up (last used >= 2 years ago)
   const brushUpCount = skills.filter((s) => {
-    if (!s.last_used_at) return false;
-    return new Date(s.last_used_at) < sixMonthsAgo;
+    if (!s.last_used_year) return false;
+    return currentYear - s.last_used_year >= 2;
   }).length;
 
   const openCreateModal = () => {
@@ -93,7 +93,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
     setCategory('Frontend');
     setProficiency(3);
     setYearsExperience(1.0);
-    setLastUsedAt(new Date().toISOString().split('T')[0]);
+    setLastUsedYear(currentYear);
     setIsActive(true);
     setShowModal(true);
   };
@@ -104,7 +104,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
     setCategory(s.category || 'General');
     setProficiency(s.proficiency);
     setYearsExperience(s.years_experience);
-    setLastUsedAt(s.last_used_at || new Date().toISOString().split('T')[0]);
+    setLastUsedYear(s.last_used_year || currentYear);
     setIsActive(s.is_active !== undefined ? s.is_active : true);
     setShowModal(true);
   };
@@ -121,7 +121,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
           category: category.trim(),
           proficiency,
           years_experience: yearsExperience,
-          last_used_at: lastUsedAt,
+          last_used_year: lastUsedYear,
           is_active: isActive,
         });
       } else {
@@ -130,7 +130,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
           category: category.trim(),
           proficiency,
           yearsExperience,
-          lastUsedAt,
+          lastUsedYear,
           isActive,
         });
       }
@@ -194,7 +194,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
             Technical Skills & Proficiency Matrix
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
-            Track active tech stack, mastery level, experience, and flag skills that need brush-ups.
+            Track active tech stack, mastery level, experience, and last used year.
           </p>
         </div>
 
@@ -297,7 +297,7 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
           {filteredSkills.map((s) => {
-            const isOutdated = s.last_used_at && new Date(s.last_used_at) < sixMonthsAgo;
+            const isOutdated = s.last_used_year && (currentYear - s.last_used_year >= 2);
             return (
               <div
                 key={s.id}
@@ -417,9 +417,9 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
                     marginTop: 'auto',
                   }}
                 >
-                  <span>⏱️ {s.years_experience} {s.years_experience === 1 ? 'year' : 'years'} exp</span>
+                  <span>⏱️ {s.years_experience} {s.years_experience === 1 ? 'yr' : 'yrs'} exp</span>
 
-                  {s.last_used_at && (
+                  {s.last_used_year && (
                     <span
                       style={{
                         display: 'inline-flex',
@@ -428,10 +428,10 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
                         color: isOutdated ? '#f97316' : 'var(--text-muted)',
                         fontWeight: isOutdated ? 600 : 400,
                       }}
-                      title={isOutdated ? 'Needs brush-up! Not used in over 6 months' : `Last used: ${s.last_used_at}`}
+                      title={isOutdated ? 'Needs brush-up! Not used in over 2 years' : `Last used in ${s.last_used_year}`}
                     >
                       {isOutdated && <AlertCircle size={12} />}
-                      Used: {s.last_used_at}
+                      Used: {s.last_used_year}
                     </span>
                   )}
                 </div>
@@ -527,15 +527,18 @@ export const SkillsPage: React.FC<SkillsPageProps> = ({
                   </div>
                 </div>
 
-                {/* Last Used At & Is Active Checkbox */}
+                {/* Last Used Year & Is Active Checkbox */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="form-group">
-                    <label className="form-label">Last Used Date</label>
+                    <label className="form-label">Last Used Year</label>
                     <input
-                      type="date"
+                      type="number"
+                      min="1990"
+                      max="2035"
                       className="form-input"
-                      value={lastUsedAt}
-                      onChange={(e) => setLastUsedAt(e.target.value)}
+                      value={lastUsedYear}
+                      onChange={(e) => setLastUsedYear(parseInt(e.target.value, 10) || currentYear)}
+                      placeholder="E.g., 2026"
                     />
                   </div>
 

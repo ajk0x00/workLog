@@ -25,7 +25,7 @@ interface LogModalProps {
     category: string;
     proficiency: number;
     yearsExperience: number;
-    lastUsedAt?: string;
+    lastUsedYear?: number;
     isActive?: boolean;
   }) => Promise<Skill>;
 }
@@ -145,7 +145,7 @@ export const LogModal: React.FC<LogModalProps> = ({
         category: quickSkillCategory,
         proficiency: quickSkillStars,
         yearsExperience: 1.0,
-        lastUsedAt: logDate,
+        lastUsedYear: logDate ? new Date(logDate).getFullYear() : new Date().getFullYear(),
         isActive: true,
       });
       setQuickSkillName('');

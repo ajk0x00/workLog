@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(100),
-    daily_goal_hours NUMERIC(4, 2) DEFAULT 8.0,
     theme_preference VARCHAR(20) DEFAULT 'dark',
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -27,7 +26,6 @@ CREATE TABLE IF NOT EXISTS work_logs (
     log_date DATE NOT NULL DEFAULT CURRENT_DATE,
     title VARCHAR(255) NOT NULL,
     content_markdown TEXT DEFAULT '',
-    duration_minutes INT DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'done' CHECK (status IN ('done', 'in_progress', 'blocked')),
     blockers TEXT DEFAULT '',
     achievements TEXT DEFAULT '',

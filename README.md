@@ -1,6 +1,6 @@
 # 📝 WorkLog — Modern Minimalist Daily Work Journal
 
-A sleek, modern, distraction-free application to log end-of-shift work, track task checklists and handovers, maintain streaks, and automatically generate daily standup summaries.
+A sleek, modern, distraction-free application to log end-of-shift work, track task checklists and handovers, maintain streaks, and export shift logs.
 
 ---
 

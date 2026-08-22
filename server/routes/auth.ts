@@ -58,7 +58,7 @@ authRouter.post('/register', async (req: Request, res: Response, next: NextFunct
     const result = await query(
       `INSERT INTO users (email, username, password_hash, full_name)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, email, username, full_name, daily_goal_hours, theme_preference, created_at`,
+       RETURNING id, email, username, full_name, theme_preference, created_at`,
       [cleanEmail, cleanUsername, passwordHash, fullName?.trim() || cleanUsername]
     );
 
@@ -98,7 +98,7 @@ authRouter.post('/login', async (req: Request, res: Response, next: NextFunction
     const cleanLogin = login.trim().toLowerCase();
 
     const result = await query(
-      `SELECT id, email, username, password_hash, full_name, daily_goal_hours, theme_preference, created_at
+      `SELECT id, email, username, password_hash, full_name, theme_preference, created_at
        FROM users
        WHERE email = $1 OR username = $1`,
       [cleanLogin]
@@ -143,7 +143,7 @@ authRouter.get('/me', requireAuth, async (req: Request, res: Response, next: Nex
   try {
     const userId = req.user!.id;
     const result = await query(
-      `SELECT id, email, username, full_name, daily_goal_hours, theme_preference, created_at
+      `SELECT id, email, username, full_name, theme_preference, created_at
        FROM users
        WHERE id = $1`,
       [userId]
@@ -165,17 +165,16 @@ authRouter.get('/me', requireAuth, async (req: Request, res: Response, next: Nex
 authRouter.put('/profile', requireAuth, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { fullName, dailyGoalHours, themePreference } = req.body;
+    const { fullName, themePreference } = req.body;
 
     const result = await query(
       `UPDATE users
        SET full_name = COALESCE($1, full_name),
-           daily_goal_hours = COALESCE($2, daily_goal_hours),
-           theme_preference = COALESCE($3, theme_preference),
+           theme_preference = COALESCE($2, theme_preference),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4
-       RETURNING id, email, username, full_name, daily_goal_hours, theme_preference, updated_at`,
-      [fullName, dailyGoalHours ? parseFloat(dailyGoalHours) : null, themePreference, userId]
+       WHERE id = $3
+       RETURNING id, email, username, full_name, theme_preference, updated_at`,
+      [fullName, themePreference, userId]
     );
 
     res.json({

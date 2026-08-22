@@ -6,7 +6,6 @@ import {
   Flame,
   Sun,
   Moon,
-  ClipboardList,
   Download,
   LogOut,
   User as UserIcon,
@@ -16,7 +15,6 @@ import {
 
 interface NavbarProps {
   stats: StatsData | null;
-  onOpenStandup: () => void;
   onOpenExport: () => void;
   onOpenAuth: () => void;
   onOpenProfile: () => void;
@@ -24,7 +22,6 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   stats,
-  onOpenStandup,
   onOpenExport,
   onOpenAuth,
   onOpenProfile,
@@ -50,16 +47,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Flame size={15} />
                 <span>{stats?.streak || 0}d streak</span>
               </div>
-
-              {/* Standup / Shift Report Trigger */}
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={onOpenStandup}
-                title="Generate End-of-Shift / Daily Standup Summary"
-              >
-                <ClipboardList size={14} />
-                <span>Shift Report</span>
-              </button>
 
               {/* Export Modal Trigger */}
               <button

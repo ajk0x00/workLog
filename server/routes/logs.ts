@@ -14,7 +14,6 @@ async function fetchLogsWithTags(whereClause: string, params: any[]) {
       TO_CHAR(wl.log_date, 'YYYY-MM-DD') AS log_date,
       wl.title,
       wl.content_markdown,
-      wl.duration_minutes,
       wl.status,
       wl.blockers,
       wl.achievements,
@@ -142,90 +141,6 @@ logsRouter.get('/', async (req: Request, res: Response, next: NextFunction): Pro
   }
 });
 
-// Standup Summary Generator
-logsRouter.post('/standup/generate', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const userId = req.user!.id;
-    const { targetDate } = req.body;
-
-    const chosenDate = targetDate ? new Date(targetDate) : new Date();
-    const todayStr = chosenDate.toISOString().split('T')[0];
-
-    // Calculate previous work day (skip weekends if today is Monday)
-    const prevDate = new Date(chosenDate);
-    const dayOfWeek = chosenDate.getDay();
-    if (dayOfWeek === 1) {
-      // Monday -> Friday
-      prevDate.setDate(chosenDate.getDate() - 3);
-    } else {
-      prevDate.setDate(chosenDate.getDate() - 1);
-    }
-    const prevDateStr = prevDate.toISOString().split('T')[0];
-
-    const todayLogs = await fetchLogsWithTags(
-      `WHERE wl.user_id = $1 AND wl.log_date = $2`,
-      [userId, todayStr]
-    );
-
-    const prevLogs = await fetchLogsWithTags(
-      `WHERE wl.user_id = $1 AND wl.log_date = $2`,
-      [userId, prevDateStr]
-    );
-
-    // Format End-of-Shift / Daily Standup Report
-    let markdown = `### 📋 End-of-Shift / Standup Report (${todayStr})\n\n`;
-
-    markdown += `#### 📋 Shift Accomplishments & Completed Work (${todayStr})\n`;
-    if (todayLogs.length === 0) {
-      markdown += `- No logs recorded for this shift yet.\n`;
-    } else {
-      for (const log of todayLogs) {
-        const statusIcon = log.status === 'done' ? '✅' : log.status === 'blocked' ? '🛑' : '⏳';
-        const tagBadges = log.tags.map((t: any) => `\`#${t.name}\``).join(' ');
-        markdown += `- ${statusIcon} **${log.title}** ${tagBadges}\n`;
-        if (log.content_markdown) {
-          const bullets = log.content_markdown
-            .split('\n')
-            .filter((l: string) => l.trim().startsWith('- ') || l.trim().startsWith('* '))
-            .slice(0, 4)
-            .map((l: string) => `  ${l.trim()}`)
-            .join('\n');
-          if (bullets) markdown += `${bullets}\n`;
-        }
-      }
-    }
-
-    markdown += `\n#### 🔄 Handover & Next Shift Priorities\n`;
-    const handoverList = todayLogs.filter((l) => l.achievements && l.achievements.trim());
-    if (handoverList.length === 0) {
-      markdown += `- All planned shift items completed. No outstanding handovers.\n`;
-    } else {
-      for (const h of handoverList) {
-        markdown += `- ⏩ **${h.title}**: ${h.achievements}\n`;
-      }
-    }
-
-    markdown += `\n#### 🚧 Blockers & Escalations\n`;
-    const blockersList = [...prevLogs, ...todayLogs].filter((l) => l.blockers && l.blockers.trim());
-    if (blockersList.length === 0) {
-      markdown += `- None! Clean shift 🚀\n`;
-    } else {
-      for (const b of blockersList) {
-        markdown += `- ⚠️ ${b.blockers} *(re: ${b.title})*\n`;
-      }
-    }
-
-    res.json({
-      markdown,
-      todayCount: todayLogs.length,
-      prevCount: prevLogs.length,
-      blockersCount: blockersList.length,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
 // Export logs in Markdown, CSV, or JSON
 logsRouter.get('/export/:format', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -243,11 +158,10 @@ logsRouter.get('/export/:format', async (req: Request, res: Response, next: Next
     if (format === 'csv') {
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="worklog-export.csv"');
-      let csv = 'ID,Date,Title,Duration (Hours),Status,Tags,Blockers,Achievements,Created At\n';
+      let csv = 'ID,Date,Title,Status,Tags,Blockers,Achievements,Created At\n';
       for (const l of logs) {
         const tagNames = l.tags.map((t: any) => t.name).join('; ');
-        const hours = (l.duration_minutes / 60).toFixed(2);
-        csv += `"${l.id}","${l.log_date}","${(l.title || '').replace(/"/g, '""')}","${hours}","${l.status}","${tagNames}","${(l.blockers || '').replace(/"/g, '""')}","${(l.achievements || '').replace(/"/g, '""')}","${l.created_at}"\n`;
+        csv += `"${l.id}","${l.log_date}","${(l.title || '').replace(/"/g, '""')}","${l.status}","${tagNames}","${(l.blockers || '').replace(/"/g, '""')}","${(l.achievements || '').replace(/"/g, '""')}","${l.created_at}"\n`;
       }
       res.send(csv);
       return;
@@ -260,7 +174,7 @@ logsRouter.get('/export/:format', async (req: Request, res: Response, next: Next
       for (const l of logs) {
         const tags = l.tags.map((t: any) => `\`#${t.name}\``).join(' ');
         md += `## [${l.log_date}] ${l.title} (${l.status.toUpperCase()})\n`;
-        md += `- **Time**: ${(l.duration_minutes / 60).toFixed(1)}h | **Tags**: ${tags || 'None'}\n\n`;
+        md += `- **Tags**: ${tags || 'None'}\n\n`;
         if (l.content_markdown) {
           md += `${l.content_markdown}\n\n`;
         }
@@ -309,7 +223,6 @@ logsRouter.post('/', async (req: Request, res: Response, next: NextFunction): Pr
       title,
       logDate,
       contentMarkdown,
-      durationMinutes,
       status,
       blockers,
       achievements,
@@ -324,13 +237,12 @@ logsRouter.post('/', async (req: Request, res: Response, next: NextFunction): Pr
     await client.query('BEGIN');
 
     const cleanDate = logDate || new Date().toISOString().split('T')[0];
-    const cleanDuration = Math.max(0, parseInt(durationMinutes || '0', 10));
     const cleanStatus = ['done', 'in_progress', 'blocked'].includes(status) ? status : 'done';
 
     const insertSql = `
-      INSERT INTO work_logs (user_id, log_date, title, content_markdown, duration_minutes, status, blockers, achievements)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING id, user_id, TO_CHAR(log_date, 'YYYY-MM-DD') AS log_date, title, content_markdown, duration_minutes, status, blockers, achievements, created_at, updated_at
+      INSERT INTO work_logs (user_id, log_date, title, content_markdown, status, blockers, achievements)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, user_id, TO_CHAR(log_date, 'YYYY-MM-DD') AS log_date, title, content_markdown, status, blockers, achievements, created_at, updated_at
     `;
 
     const result = await client.query(insertSql, [
@@ -338,7 +250,6 @@ logsRouter.post('/', async (req: Request, res: Response, next: NextFunction): Pr
       cleanDate,
       title.trim(),
       contentMarkdown || '',
-      cleanDuration,
       cleanStatus,
       blockers?.trim() || '',
       achievements?.trim() || '',
@@ -379,7 +290,6 @@ logsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction): 
       title,
       logDate,
       contentMarkdown,
-      durationMinutes,
       status,
       blockers,
       achievements,
@@ -389,7 +299,6 @@ logsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction): 
     await client.query('BEGIN');
 
     const cleanDate = logDate ? logDate : undefined;
-    const cleanDuration = durationMinutes !== undefined ? Math.max(0, parseInt(durationMinutes, 10)) : undefined;
     const cleanStatus = status && ['done', 'in_progress', 'blocked'].includes(status) ? status : undefined;
 
     const updateSql = `
@@ -397,12 +306,11 @@ logsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction): 
       SET title = COALESCE($1, title),
           log_date = COALESCE($2::DATE, log_date),
           content_markdown = COALESCE($3, content_markdown),
-          duration_minutes = COALESCE($4, duration_minutes),
-          status = COALESCE($5, status),
-          blockers = COALESCE($6, blockers),
-          achievements = COALESCE($7, achievements),
+          status = COALESCE($4, status),
+          blockers = COALESCE($5, blockers),
+          achievements = COALESCE($6, achievements),
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = $8 AND user_id = $9
+      WHERE id = $7 AND user_id = $8
       RETURNING id
     `;
 
@@ -410,7 +318,6 @@ logsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction): 
       title?.trim(),
       cleanDate,
       contentMarkdown,
-      cleanDuration,
       cleanStatus,
       blockers,
       achievements,

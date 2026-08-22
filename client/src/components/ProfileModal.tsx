@@ -10,7 +10,6 @@ interface ProfileModalProps {
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const { user, updateProfile } = useAuth();
   const [fullName, setFullName] = useState(user?.full_name || '');
-  const [dailyGoalHours, setDailyGoalHours] = useState(user?.daily_goal_hours || 8);
   const [saving, setSaving] = useState(false);
 
   if (!isOpen || !user) return null;
@@ -21,7 +20,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
       setSaving(true);
       await updateProfile({
         full_name: fullName.trim(),
-        daily_goal_hours: dailyGoalHours,
       });
       onClose();
     } catch (err: any) {
@@ -77,22 +75,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Your display name"
               />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Daily Work Goal (Hours)</label>
-              <input
-                type="number"
-                step="0.5"
-                min="1"
-                max="24"
-                className="form-input"
-                value={dailyGoalHours}
-                onChange={(e) => setDailyGoalHours(parseFloat(e.target.value || '8'))}
-              />
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Target hours per day to track against in your progress meters.
-              </span>
             </div>
           </div>
 

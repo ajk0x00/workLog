@@ -49,12 +49,16 @@ export async function query<T extends QueryResultRow = any>(
 
 export async function initDatabase(): Promise<void> {
   try {
+    const targetInfo = config.db.connectionString
+      ? config.db.connectionString.replace(/:[^:@]+@/, ':****@')
+      : `${config.db.host}:${config.db.port}/${config.db.database}`;
+    console.log(`[Database Target]: ${targetInfo} (SSL: ${config.db.ssl ? 'enabled' : 'disabled'})`);
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schemaSql = fs.readFileSync(schemaPath, 'utf8');
     await pool.query(schemaSql);
-    console.log('✓ External PostgreSQL database schema verified and initialized');
+    console.log('✓ PostgreSQL database schema verified and initialized');
   } catch (err: any) {
-    console.error('✗ Failed to initialize database schema:', err.message);
+    console.error('✗ Failed to initialize database schema:', err.message || err);
     throw err;
   }
 }

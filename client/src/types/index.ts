@@ -3,7 +3,6 @@ export interface User {
   email: string;
   username: string;
   full_name?: string;
-  daily_goal_hours: number;
   theme_preference: 'dark' | 'light';
   created_at: string;
 }
@@ -24,7 +23,6 @@ export interface WorkLog {
   log_date: string; // 'YYYY-MM-DD'
   title: string;
   content_markdown: string;
-  duration_minutes: number;
   status: LogStatus;
   blockers?: string;
   achievements?: string;
@@ -36,32 +34,24 @@ export interface WorkLog {
 export interface DayStats {
   date_str: string;
   day_name: string;
-  minutes: number;
   count: number;
 }
 
 export interface TagStats {
   name: string;
   color: string;
-  total_minutes: number;
   log_count: number;
 }
 
 export interface StatsData {
   streak: number;
-  dailyGoalHours: number;
   today: {
-    minutes: number;
-    hours: number;
-    goalPercentage: number;
     count: number;
     done: number;
     inProgress: number;
     blocked: number;
   };
   week: {
-    minutes: number;
-    hours: number;
     count: number;
   };
   last7Days: DayStats[];

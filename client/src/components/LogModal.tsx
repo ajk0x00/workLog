@@ -10,7 +10,6 @@ interface LogModalProps {
     title: string;
     logDate: string;
     contentMarkdown: string;
-    durationMinutes: number;
     status: LogStatus;
     blockers: string;
     achievements: string;
@@ -94,7 +93,6 @@ export const LogModal: React.FC<LogModalProps> = ({
         title: title.trim(),
         logDate,
         contentMarkdown,
-        durationMinutes: 0,
         status,
         blockers,
         achievements,

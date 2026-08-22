@@ -7,7 +7,6 @@ import { QuickLogBar } from './components/QuickLogBar.js';
 import { FilterBar } from './components/FilterBar.js';
 import { LogCard } from './components/LogCard.js';
 import { LogModal } from './components/LogModal.js';
-import { StandupModal } from './components/StandupModal.js';
 import { ExportModal } from './components/ExportModal.js';
 import { AuthModal } from './components/AuthModal.js';
 import { ProfileModal } from './components/ProfileModal.js';
@@ -35,7 +34,6 @@ export const App: React.FC = () => {
   // Modal states
   const [logModalOpen, setLogModalOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<WorkLog | null>(null);
-  const [standupOpen, setStandupOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -103,7 +101,6 @@ export const App: React.FC = () => {
   // Add Log
   const handleAddLog = async (data: {
     title: string;
-    durationMinutes?: number;
     status: LogStatus;
     tags: string[];
     contentMarkdown?: string;
@@ -111,7 +108,6 @@ export const App: React.FC = () => {
     try {
       await api.post('/api/logs', {
         title: data.title,
-        durationMinutes: data.durationMinutes || 0,
         status: data.status,
         tags: data.tags,
         contentMarkdown: data.contentMarkdown,
@@ -133,7 +129,6 @@ export const App: React.FC = () => {
     title: string;
     logDate: string;
     contentMarkdown: string;
-    durationMinutes: number;
     status: LogStatus;
     blockers: string;
     achievements: string;
@@ -257,7 +252,6 @@ export const App: React.FC = () => {
       {/* Top Navigation */}
       <Navbar
         stats={stats}
-        onOpenStandup={() => setStandupOpen(true)}
         onOpenExport={() => setExportOpen(true)}
         onOpenAuth={() => setAuthOpen(true)}
         onOpenProfile={() => setProfileOpen(true)}
@@ -350,7 +344,7 @@ export const App: React.FC = () => {
               Modern Minimalist Work Journal
             </h1>
             <p className="empty-desc" style={{ maxWidth: 440, marginBottom: 24, fontSize: '0.95rem' }}>
-              Track daily tasks, measure work hours, maintain streaks, and generate instant standup reports with PostgreSQL persistence.
+              Track daily tasks, maintain streaks, log handover notes, and export shift reports with PostgreSQL persistence.
             </p>
             <button
               className="btn btn-primary"
@@ -373,8 +367,6 @@ export const App: React.FC = () => {
         allTags={tags}
         onCreateTag={handleCreateTag}
       />
-
-      <StandupModal isOpen={standupOpen} onClose={() => setStandupOpen(false)} />
 
       <ExportModal isOpen={exportOpen} onClose={() => setExportOpen(false)} />
 

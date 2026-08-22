@@ -7,7 +7,6 @@ interface QuickLogBarProps {
   tags: Tag[];
   onAddLog: (data: {
     title: string;
-    durationMinutes?: number;
     status: LogStatus;
     tags: string[];
     contentMarkdown?: string;
@@ -40,7 +39,6 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
       setSubmitting(true);
       await onAddLog({
         title: title.trim(),
-        durationMinutes: 0,
         status,
         tags: selectedTags,
       });

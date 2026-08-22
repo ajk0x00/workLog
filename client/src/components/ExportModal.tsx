@@ -30,7 +30,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
 
         <div className="modal-body">
           <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            Choose a format to export your complete work history, durations, status, and notes:
+            Choose a format to export your complete work history, status, and notes:
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>

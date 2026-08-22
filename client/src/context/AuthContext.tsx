@@ -70,7 +70,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (data: Partial<User>) => {
     const res = await api.put<{ user: User; message: string }>('/api/auth/profile', {
       fullName: data.full_name,
-      dailyGoalHours: data.daily_goal_hours,
       themePreference: data.theme_preference,
     });
     setUser(res.user);

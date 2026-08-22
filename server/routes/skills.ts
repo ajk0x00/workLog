@@ -12,7 +12,7 @@ skillsRouter.get('/', async (req: Request, res: Response, next: NextFunction): P
     const result = await query(
       `SELECT id, name, category, proficiency,
               years_experience::float AS years_experience,
-              COALESCE(last_used_year, EXTRACT(YEAR FROM COALESCE(last_used_at, CURRENT_DATE))::int) AS last_used_year,
+              COALESCE(last_used_year, EXTRACT(YEAR FROM CURRENT_DATE)::int) AS last_used_year,
               is_active, created_at, updated_at
        FROM skills
        WHERE user_id = $1

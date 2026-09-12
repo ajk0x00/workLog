@@ -6,7 +6,6 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (login: string, password: string) => Promise<void>;
-  register: (email: string, username: string, password: string, fullName?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -45,19 +44,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(res.user);
   };
 
-  const register = async (email: string, username: string, password: string, fullName?: string) => {
-    const res = await api.post<{ user: User; token: string; message: string }>('/api/auth/register', {
-      email,
-      username,
-      password,
-      fullName,
-    });
-    if (res.token) {
-      localStorage.setItem('worklog_token', res.token);
-    }
-    setUser(res.user);
-  };
-
   const logout = async () => {
     try {
       await api.post('/api/auth/logout');
@@ -81,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         loading,
         login,
-        register,
         logout,
         updateProfile,
         refreshUser,

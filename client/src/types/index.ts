@@ -55,33 +55,6 @@ export interface WorkLog {
   tags: Tag[];
 }
 
-export interface DayStats {
-  date_str: string;
-  day_name: string;
-  count: number;
-}
-
-export interface TagStats {
-  name: string;
-  color: string;
-  log_count: number;
-}
-
-export interface StatsData {
-  streak: number;
-  today: {
-    count: number;
-    done: number;
-    inProgress: number;
-    blocked: number;
-  };
-  week: {
-    count: number;
-  };
-  last7Days: DayStats[];
-  tags: TagStats[];
-}
-
 export interface FilterState {
   search: string;
   startDate: string;

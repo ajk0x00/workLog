@@ -64,21 +64,3 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     res.status(401).json({ error: 'Session expired or invalid. Please log in again.' });
   }
 }
-
-export function optionalAuth(req: Request, res: Response, next: NextFunction): void {
-  const token =
-    req.cookies?.[config.cookieName] ||
-    (req.headers.authorization?.startsWith('Bearer ')
-      ? req.headers.authorization.split(' ')[1]
-      : null);
-
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, config.jwtSecret) as AuthUser;
-      req.user = decoded;
-    } catch {
-      // Ignore invalid optional token
-    }
-  }
-  next();
-}

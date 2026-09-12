@@ -276,48 +276,6 @@ button {
   background: var(--accent-danger-subtle);
 }
 
-/* Badges & Streak */
-.streak-badge {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(239, 68, 68, 0.15));
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: var(--radius-full);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #f59e0b;
-}
-
-.hours-progress-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.progress-mini-bar {
-  width: 40px;
-  height: 6px;
-  background: var(--bg-secondary);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.progress-mini-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-success));
-  border-radius: 3px;
-  transition: width var(--transition-normal);
-}
-
 /* Quick Log Input Bar */
 .quick-log-card {
   background: var(--bg-card);
@@ -831,21 +789,7 @@ button {
   font-weight: 600;
 }
 
-/* Productivity Overview Card */
-.stats-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 18px 20px;
-  margin-bottom: 24px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-}
-
+/* Overview Stat Cards */
 .stats-overview-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -862,12 +806,6 @@ button {
   gap: 6px;
 }
 
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .stat-label {
   font-size: 0.775rem;
   font-weight: 500;
@@ -881,41 +819,6 @@ button {
   font-weight: 700;
   color: var(--text-primary);
   font-family: var(--font-mono);
-}
-
-.sparkline-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  height: 48px;
-  margin-top: 8px;
-}
-
-.spark-bar-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  height: 100%;
-}
-
-.spark-bar {
-  width: 100%;
-  max-width: 28px;
-  background: var(--bg-secondary);
-  border-radius: 4px 4px 0 0;
-  transition: height var(--transition-normal);
-}
-
-.spark-bar.has-data {
-  background: linear-gradient(180deg, var(--accent-primary), rgba(99, 102, 241, 0.4));
-}
-
-.spark-label {
-  font-size: 0.675rem;
-  font-family: var(--font-mono);
-  color: var(--text-muted);
 }
 
 /* Animations */
@@ -970,9 +873,6 @@ button {
   }
   .quick-controls {
     justify-content: space-between;
-  }
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
   .stats-overview-grid {
     grid-template-columns: repeat(2, 1fr);

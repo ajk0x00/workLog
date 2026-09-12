@@ -1,9 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext.js';
 import { useTheme } from '../context/ThemeContext.js';
-import type { StatsData } from '../types/index.js';
 import {
-  Flame,
   Sun,
   Moon,
   Download,
@@ -16,7 +14,6 @@ import {
 } from 'lucide-react';
 
 interface NavbarProps {
-  stats: StatsData | null;
   currentTab: 'journal' | 'skills';
   onSelectTab: (tab: 'journal' | 'skills') => void;
   onOpenExport: () => void;
@@ -25,7 +22,6 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  stats,
   currentTab,
   onSelectTab,
   onOpenExport,
@@ -73,12 +69,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="nav-actions">
           {user ? (
             <>
-              {/* Shift Streak Badge */}
-              <div className="streak-badge" title={`${stats?.streak || 0} consecutive shift logging streak!`}>
-                <Flame size={15} />
-                <span>{stats?.streak || 0}d streak</span>
-              </div>
-
               {/* Export Modal Trigger */}
               <button
                 className="btn btn-secondary btn-sm"

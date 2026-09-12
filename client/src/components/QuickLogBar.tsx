@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { Tag, Company, LogStatus } from '../types/index.js';
 import { Plus, SlidersHorizontal, CheckCircle2, Clock, AlertTriangle, Building2 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 interface QuickLogBarProps {
   tags: Tag[];
@@ -14,7 +13,6 @@ interface QuickLogBarProps {
     contentMarkdown?: string;
   }) => Promise<void>;
   onOpenDetailedModal: () => void;
-  streakCount: number;
 }
 
 export const QuickLogBar: React.FC<QuickLogBarProps> = ({
@@ -49,12 +47,6 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
         status,
         companyId: selectedCompanyId ? Number(selectedCompanyId) : null,
         tags: selectedTags,
-      });
-
-      confetti({
-        particleCount: 60,
-        spread: 60,
-        origin: { y: 0.7 },
       });
 
       setTitle('');

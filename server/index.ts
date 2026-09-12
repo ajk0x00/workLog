@@ -9,7 +9,6 @@ import { initDatabase } from './db/index.js';
 import { authRouter } from './routes/auth.js';
 import { logsRouter } from './routes/logs.js';
 import { tagsRouter } from './routes/tags.js';
-import { statsRouter } from './routes/stats.js';
 import { companiesRouter } from './routes/companies.js';
 import { skillsRouter } from './routes/skills.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -43,7 +42,6 @@ app.get('/api/health', (_req: Request, res: Response) => {
 app.use('/api/auth', authRouter);
 app.use('/api/logs', logsRouter);
 app.use('/api/tags', tagsRouter);
-app.use('/api/stats', statsRouter);
 app.use('/api/companies', companiesRouter);
 app.use('/api/skills', skillsRouter);
 

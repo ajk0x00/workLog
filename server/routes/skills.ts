@@ -30,7 +30,7 @@ skillsRouter.get('/', async (req: Request, res: Response, next: NextFunction): P
 skillsRouter.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const { name, category, proficiency, yearsExperience, lastUsedYear, lastUsedAt, isActive } = req.body;
+    const { name, category, proficiency, yearsExperience, lastUsedYear, isActive } = req.body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       res.status(400).json({ error: 'Skill name is required.' });
@@ -42,7 +42,7 @@ skillsRouter.post('/', async (req: Request, res: Response, next: NextFunction): 
     const cleanCategory = category?.trim() || 'General';
     const cleanProficiency = Math.max(1, Math.min(5, Number(proficiency) || 3));
     const cleanExperience = Math.max(0, Number(yearsExperience) || 1.0);
-    const cleanLastUsedYear = Number(lastUsedYear) || (lastUsedAt ? new Date(lastUsedAt).getFullYear() : currentYear);
+    const cleanLastUsedYear = Number(lastUsedYear) || currentYear;
     const cleanIsActive = isActive !== undefined ? Boolean(isActive) : true;
 
     const result = await query(
@@ -70,11 +70,11 @@ skillsRouter.put('/:id', async (req: Request, res: Response, next: NextFunction)
   try {
     const userId = req.user!.id;
     const skillId = parseInt(String(req.params.id), 10);
-    const { name, category, proficiency, yearsExperience, lastUsedYear, lastUsedAt, isActive } = req.body;
+    const { name, category, proficiency, yearsExperience, lastUsedYear, isActive } = req.body;
 
     const cleanProficiency = proficiency !== undefined ? Math.max(1, Math.min(5, Number(proficiency))) : undefined;
     const cleanExperience = yearsExperience !== undefined ? Math.max(0, Number(yearsExperience)) : undefined;
-    const cleanLastUsedYear = lastUsedYear !== undefined ? Number(lastUsedYear) : (lastUsedAt ? new Date(lastUsedAt).getFullYear() : undefined);
+    const cleanLastUsedYear = lastUsedYear !== undefined ? Number(lastUsedYear) : undefined;
     const cleanIsActive = isActive !== undefined ? Boolean(isActive) : undefined;
 
     const result = await query(

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './context/AuthContext.js';
-import type { WorkLog, Tag, Company, Skill, StatsData, FilterState, LogStatus } from './types/index.js';
+import type { WorkLog, Tag, Company, Skill, FilterState, LogStatus } from './types/index.js';
 import { api } from './utils/api.js';
 import { Navbar } from './components/Navbar.js';
 import { QuickLogBar } from './components/QuickLogBar.js';
@@ -10,7 +10,6 @@ import { LogModal } from './components/LogModal.js';
 import { ExportModal } from './components/ExportModal.js';
 import { AuthModal } from './components/AuthModal.js';
 import { ProfileModal } from './components/ProfileModal.js';
-import { StatsOverview } from './components/StatsOverview.js';
 import { SkillsPage } from './components/SkillsPage.js';
 import { Plus, BookOpen, Sparkles, LogIn } from 'lucide-react';
 
@@ -22,7 +21,6 @@ export const App: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
-  const [stats, setStats] = useState<StatsData | null>(null);
 
   // Tab State
   const [currentTab, setCurrentTab] = useState<'journal' | 'skills'>('journal');
@@ -78,17 +76,6 @@ export const App: React.FC = () => {
     }
   }, [user]);
 
-  // Fetch Stats
-  const fetchStats = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await api.get<StatsData>('/api/stats');
-      setStats(res);
-    } catch (err) {
-      console.error('Failed to load stats:', err);
-    }
-  }, [user]);
-
   // Fetch Logs with active filters
   const fetchLogs = useCallback(async () => {
     if (!user) {
@@ -126,9 +113,8 @@ export const App: React.FC = () => {
       fetchTags();
       fetchCompanies();
       fetchSkills();
-      fetchStats();
     }
-  }, [user, fetchLogs, fetchTags, fetchCompanies, fetchSkills, fetchStats]);
+  }, [user, fetchLogs, fetchTags, fetchCompanies, fetchSkills]);
 
   // Add Log
   const handleAddLog = async (data: {
@@ -149,7 +135,6 @@ export const App: React.FC = () => {
       await fetchLogs();
       await fetchTags();
       await fetchCompanies();
-      await fetchStats();
     } catch (err: any) {
       if (err?.statusCode === 401 || err?.message?.includes('Authentication')) {
         setAuthOpen(true);
@@ -179,7 +164,6 @@ export const App: React.FC = () => {
       await fetchLogs();
       await fetchTags();
       await fetchCompanies();
-      await fetchStats();
     } catch (err: any) {
       if (err?.statusCode === 401 || err?.message?.includes('Authentication')) {
         setAuthOpen(true);
@@ -192,7 +176,6 @@ export const App: React.FC = () => {
   const handleStatusChange = async (id: number, status: LogStatus) => {
     await api.patch(`/api/logs/${id}/status`, { status });
     await fetchLogs();
-    await fetchStats();
   };
 
   // Delete Log
@@ -200,7 +183,6 @@ export const App: React.FC = () => {
     await api.delete(`/api/logs/${id}`);
     await fetchLogs();
     await fetchTags();
-    await fetchStats();
   };
 
   // Update markdown directly (from interactive task checkbox click)
@@ -335,7 +317,6 @@ export const App: React.FC = () => {
     <div className="app-container">
       {/* Top Navigation */}
       <Navbar
-        stats={stats}
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
         onOpenExport={() => setExportOpen(true)}
@@ -360,11 +341,7 @@ export const App: React.FC = () => {
               companies={companies}
               onAddLog={handleAddLog}
               onOpenDetailedModal={handleOpenCreate}
-              streakCount={stats?.streak || 0}
             />
-
-            {/* Productivity & Shift Overview */}
-            <StatsOverview stats={stats} />
 
             {/* Search, Filter & Category Bar */}
             <FilterBar
@@ -441,7 +418,7 @@ export const App: React.FC = () => {
               Modern Minimalist Work Journal
             </h1>
             <p className="empty-desc" style={{ maxWidth: 440, marginBottom: 24, fontSize: '0.95rem' }}>
-              Track daily tasks, maintain streaks, log handover notes, and export shift reports with PostgreSQL persistence.
+              Track daily tasks, log achievements and handover notes, build your skills matrix, and generate ATS-ready resumes from your work history.
             </p>
             <button
               className="btn btn-primary"

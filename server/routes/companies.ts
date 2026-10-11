@@ -5,12 +5,28 @@ import { requireAuth } from '../middleware/auth.js';
 export const companiesRouter = Router();
 companiesRouter.use(requireAuth);
 
+// Normalize MM/YYYY or YYYY-MM input to MM/YYYY; returns null for invalid/empty
+function normalizeMonth(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  const ymMatch = trimmed.match(/^(\d{4})-(\d{2})$/);
+  if (ymMatch) return `${ymMatch[2]}/${ymMatch[1]}`;
+  return /^\d{2}\/\d{4}$/.test(trimmed) ? trimmed : null;
+}
+
+const pick = (body: any, ...keys: string[]) => {
+  for (const key of keys) {
+    if (body[key] !== undefined) return body[key];
+  }
+  return undefined;
+};
+
 // Get all companies for current user
 companiesRouter.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
     const result = await query(
-      `SELECT c.id, c.name, c.color, c.is_current, c.created_at,
+      `SELECT c.id, c.name, c.color, c.is_current, c.job_title, c.location, c.start_month, c.end_month, c.created_at,
               COUNT(wl.id)::int AS log_count
        FROM companies c
        LEFT JOIN work_logs wl ON c.id = wl.company_id
@@ -31,6 +47,10 @@ companiesRouter.post('/', async (req: Request, res: Response, next: NextFunction
   try {
     const userId = req.user!.id;
     const { name, color, isCurrent } = req.body;
+    const jobTitle = pick(req.body, 'jobTitle', 'job_title');
+    const location = req.body.location;
+    const startMonth = normalizeMonth(pick(req.body, 'startMonth', 'start_month'));
+    const endMonth = normalizeMonth(pick(req.body, 'endMonth', 'end_month'));
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       res.status(400).json({ error: 'Company name is required.' });
@@ -46,10 +66,19 @@ companiesRouter.post('/', async (req: Request, res: Response, next: NextFunction
     }
 
     const result = await query(
-      `INSERT INTO companies (user_id, name, color, is_current)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, color, is_current, created_at`,
-      [userId, cleanName, cleanColor, cleanIsCurrent]
+      `INSERT INTO companies (user_id, name, color, is_current, job_title, location, start_month, end_month)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, name, color, is_current, job_title, location, start_month, end_month, created_at`,
+      [
+        userId,
+        cleanName,
+        cleanColor,
+        cleanIsCurrent,
+        typeof jobTitle === 'string' && jobTitle.trim() ? jobTitle.trim() : null,
+        typeof location === 'string' && location.trim() ? location.trim() : null,
+        startMonth,
+        endMonth,
+      ]
     );
 
     res.status(201).json({ company: result.rows[0], message: 'Company created.' });
@@ -67,23 +96,52 @@ companiesRouter.put('/:id', async (req: Request, res: Response, next: NextFuncti
   try {
     const userId = req.user!.id;
     const companyId = parseInt(String(req.params.id), 10);
-    const { name, color, isCurrent } = req.body;
+    const body = req.body || {};
 
-    if (isCurrent) {
+    const isCurrent = pick(body, 'isCurrent', 'is_current');
+    const jobTitle = pick(body, 'jobTitle', 'job_title');
+    const location = pick(body, 'location');
+    const startMonth = pick(body, 'startMonth', 'start_month');
+    const endMonth = pick(body, 'endMonth', 'end_month');
+
+    if (isCurrent === true) {
       await query('UPDATE companies SET is_current = false WHERE user_id = $1 AND id != $2', [
         userId,
         companyId,
       ]);
     }
 
+    const sets: string[] = [];
+    const params: any[] = [];
+    const add = (column: string, value: unknown) => {
+      params.push(value);
+      sets.push(`${column} = $${params.length}`);
+    };
+
+    if (body.name !== undefined) add('name', typeof body.name === 'string' ? body.name.trim() : null);
+    if (body.color !== undefined) add('color', body.color);
+    if (isCurrent !== undefined) add('is_current', Boolean(isCurrent));
+    if (jobTitle !== undefined) {
+      add('job_title', typeof jobTitle === 'string' && jobTitle.trim() ? jobTitle.trim() : null);
+    }
+    if (location !== undefined) {
+      add('location', typeof location === 'string' && location.trim() ? location.trim() : null);
+    }
+    if (startMonth !== undefined) add('start_month', normalizeMonth(startMonth));
+    if (endMonth !== undefined) add('end_month', normalizeMonth(endMonth));
+
+    if (sets.length === 0) {
+      res.status(400).json({ error: 'No fields provided to update.' });
+      return;
+    }
+
+    params.push(companyId, userId);
     const result = await query(
       `UPDATE companies
-       SET name = COALESCE($1, name),
-           color = COALESCE($2, color),
-           is_current = COALESCE($3, is_current)
-       WHERE id = $4 AND user_id = $5
-       RETURNING id, name, color, is_current, created_at`,
-      [name?.trim(), color, isCurrent !== undefined ? Boolean(isCurrent) : undefined, companyId, userId]
+       SET ${sets.join(', ')}
+       WHERE id = $${params.length - 1} AND user_id = $${params.length}
+       RETURNING id, name, color, is_current, job_title, location, start_month, end_month, created_at`,
+      params
     );
 
     if (result.rows.length === 0) {

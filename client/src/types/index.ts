@@ -12,6 +12,10 @@ export interface Company {
   name: string;
   color: string;
   is_current: boolean;
+  job_title?: string | null;
+  location?: string | null;
+  start_month?: string | null;
+  end_month?: string | null;
   created_at?: string;
   log_count?: number;
 }
@@ -35,6 +39,15 @@ export interface Skill {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface Resume {
+  id: number;
+  title: string;
+  target_role?: string | null;
+  content_markdown?: string;
+  model: string;
+  created_at: string;
 }
 
 export type LogStatus = 'done' | 'in_progress' | 'blocked';

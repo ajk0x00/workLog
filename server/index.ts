@@ -11,6 +11,7 @@ import { logsRouter } from './routes/logs.js';
 import { tagsRouter } from './routes/tags.js';
 import { companiesRouter } from './routes/companies.js';
 import { skillsRouter } from './routes/skills.js';
+import { resumesRouter } from './routes/resumes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +45,7 @@ app.use('/api/logs', logsRouter);
 app.use('/api/tags', tagsRouter);
 app.use('/api/companies', companiesRouter);
 app.use('/api/skills', skillsRouter);
+app.use('/api/resumes', resumesRouter);
 
 // Resolve static frontend assets with fallback search
 const possibleClientPaths = [

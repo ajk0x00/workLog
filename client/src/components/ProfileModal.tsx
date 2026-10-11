@@ -7,7 +7,15 @@ interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   companies: Company[];
-  onCreateCompany: (name: string, color: string, isCurrent: boolean) => Promise<Company>;
+  onCreateCompany: (data: {
+    name: string;
+    color: string;
+    isCurrent: boolean;
+    jobTitle?: string;
+    location?: string;
+    startMonth?: string;
+    endMonth?: string;
+  }) => Promise<Company>;
   onUpdateCompany: (id: number, data: Partial<Company>) => Promise<Company>;
   onDeleteCompany: (id: number) => Promise<void>;
 }
@@ -30,6 +38,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [compName, setCompName] = useState('');
   const [compColor, setCompColor] = useState('#3b82f6');
   const [compIsCurrent, setCompIsCurrent] = useState(true);
+  const [compJobTitle, setCompJobTitle] = useState('');
+  const [compLocation, setCompLocation] = useState('');
+  const [compStartMonth, setCompStartMonth] = useState('');
+  const [compEndMonth, setCompEndMonth] = useState('');
   const [compSaving, setCompSaving] = useState(false);
 
   if (!isOpen || !user) return null;
@@ -54,6 +66,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     setCompName('');
     setCompColor('#3b82f6');
     setCompIsCurrent(companies.length === 0);
+    setCompJobTitle('');
+    setCompLocation('');
+    setCompStartMonth('');
+    setCompEndMonth('');
     setShowCompanyForm(true);
   };
 
@@ -62,12 +78,27 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     setCompName(c.name);
     setCompColor(c.color || '#3b82f6');
     setCompIsCurrent(c.is_current);
+    setCompJobTitle(c.job_title || '');
+    setCompLocation(c.location || '');
+    setCompStartMonth(c.start_month || '');
+    setCompEndMonth(c.end_month || '');
     setShowCompanyForm(true);
   };
 
   const handleSaveCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!compName.trim() || compSaving) return;
+
+    const monthPattern = /^(\d{2}\/\d{4}|\d{4}-\d{2})$/;
+    for (const [label, value] of [
+      ['Start', compStartMonth],
+      ['End', compEndMonth],
+    ] as const) {
+      if (value.trim() && !monthPattern.test(value.trim())) {
+        alert(`${label} must be in MM/YYYY (e.g. 03/2024) or YYYY-MM format.`);
+        return;
+      }
+    }
 
     try {
       setCompSaving(true);
@@ -76,9 +107,21 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           name: compName.trim(),
           color: compColor,
           is_current: compIsCurrent,
+          job_title: compJobTitle.trim(),
+          location: compLocation.trim(),
+          start_month: compStartMonth.trim(),
+          end_month: compEndMonth.trim(),
         });
       } else {
-        await onCreateCompany(compName.trim(), compColor, compIsCurrent);
+        await onCreateCompany({
+          name: compName.trim(),
+          color: compColor,
+          isCurrent: compIsCurrent,
+          jobTitle: compJobTitle.trim() || undefined,
+          location: compLocation.trim() || undefined,
+          startMonth: compStartMonth.trim() || undefined,
+          endMonth: compEndMonth.trim() || undefined,
+        });
       }
       setShowCompanyForm(false);
       setCompName('');
@@ -201,6 +244,47 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         onChange={(e) => setCompColor(e.target.value)}
                         style={{ width: 38, height: 38, padding: 2, borderRadius: 6, cursor: 'pointer' }}
                         title="Pick company badge color"
+                      />
+                    </div>
+
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Job Title (e.g. AI Engineer) — used on resume"
+                      value={compJobTitle}
+                      onChange={(e) => setCompJobTitle(e.target.value)}
+                      style={{ marginBottom: 8 }}
+                    />
+
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Location (e.g. Kochi, Kerala) — used on resume"
+                      value={compLocation}
+                      onChange={(e) => setCompLocation(e.target.value)}
+                      style={{ marginBottom: 8 }}
+                    />
+
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Start (MM/YYYY)"
+                        pattern="(\d{2}/\d{4}|\d{4}-\d{2})"
+                        value={compStartMonth}
+                        onChange={(e) => setCompStartMonth(e.target.value)}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder={compIsCurrent ? 'End (current)' : 'End (MM/YYYY)'}
+                        pattern="(\d{2}/\d{4}|\d{4}-\d{2})"
+                        value={compEndMonth}
+                        onChange={(e) => setCompEndMonth(e.target.value)}
+                        disabled={compIsCurrent}
+                        style={{ marginBottom: 8, opacity: compIsCurrent ? 0.5 : 1 }}
+                        title={compIsCurrent ? 'Current employer — end date is "Present"' : 'Leave empty for Present'}
                       />
                     </div>
 

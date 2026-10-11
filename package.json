@@ -18,16 +18,20 @@
     "db:current": "alembic current",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "export:data": "node scripts/export_data.js"
   },
   "dependencies": {
+    "@langchain/core": "^1.2.11",
+    "@langchain/fireworks": "^0.2.13",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.13.3"
+    "pg": "^8.13.3",
+    "zod": "^4.6.2"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

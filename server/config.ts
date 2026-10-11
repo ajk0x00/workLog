@@ -12,6 +12,11 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'worklog-super-secret-key-change-in-production-2026',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   cookieName: 'worklog_session',
+  fireworks: {
+    apiKey: process.env.FIREWORKS_API_KEY || '',
+    model: process.env.FIREWORKS_MODEL || 'accounts/fireworks/models/kimi-k2-instruct',
+    baseUrl: process.env.FIREWORKS_BASE_URL || 'https://api.fireworks.ai/inference/v1',
+  },
   db: {
     connectionString: connectionString || undefined,
     host: process.env.DB_HOST || 'localhost',

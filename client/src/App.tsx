@@ -11,6 +11,7 @@ import { ExportModal } from './components/ExportModal.js';
 import { AuthModal } from './components/AuthModal.js';
 import { ProfileModal } from './components/ProfileModal.js';
 import { SkillsPage } from './components/SkillsPage.js';
+import { ResumePage } from './components/ResumePage.js';
 import { Plus, BookOpen, Sparkles, LogIn } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -23,7 +24,7 @@ export const App: React.FC = () => {
   const [skills, setSkills] = useState<Skill[]>([]);
 
   // Tab State
-  const [currentTab, setCurrentTab] = useState<'journal' | 'skills'>('journal');
+  const [currentTab, setCurrentTab] = useState<'journal' | 'skills' | 'resume'>('journal');
 
   // Filters
   const [filters, setFilters] = useState<FilterState>({
@@ -211,8 +212,24 @@ export const App: React.FC = () => {
   };
 
   // Company Actions
-  const handleCreateCompany = async (name: string, color: string, isCurrent: boolean): Promise<Company> => {
-    const res = await api.post<{ company: Company }>('/api/companies', { name, color, isCurrent });
+  const handleCreateCompany = async (data: {
+    name: string;
+    color: string;
+    isCurrent: boolean;
+    jobTitle?: string;
+    location?: string;
+    startMonth?: string;
+    endMonth?: string;
+  }): Promise<Company> => {
+    const res = await api.post<{ company: Company }>('/api/companies', {
+      name: data.name,
+      color: data.color,
+      isCurrent: data.isCurrent,
+      jobTitle: data.jobTitle,
+      location: data.location,
+      startMonth: data.startMonth,
+      endMonth: data.endMonth,
+    });
     await fetchCompanies();
     await fetchLogs();
     return res.company;
@@ -333,6 +350,8 @@ export const App: React.FC = () => {
               onUpdateSkill={handleUpdateSkill}
               onDeleteSkill={handleDeleteSkill}
             />
+          ) : currentTab === 'resume' ? (
+            <ResumePage companies={companies} />
           ) : (
           <>
             {/* End of Shift Quick Log Bar */}

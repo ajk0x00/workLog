@@ -40,6 +40,7 @@ RUN apk add --no-cache python3 py3-pip && \
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/client/dist ./dist/client/dist
+COPY --from=builder /app/server/prompts ./dist/server/prompts
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY scripts ./scripts

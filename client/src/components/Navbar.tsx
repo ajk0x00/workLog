@@ -11,11 +11,12 @@ import {
   CheckCircle2,
   BookOpen,
   Sparkles,
+  FileText,
 } from 'lucide-react';
 
 interface NavbarProps {
-  currentTab: 'journal' | 'skills';
-  onSelectTab: (tab: 'journal' | 'skills') => void;
+  currentTab: 'journal' | 'skills' | 'resume';
+  onSelectTab: (tab: 'journal' | 'skills' | 'resume') => void;
   onOpenExport: () => void;
   onOpenAuth: () => void;
   onOpenProfile: () => void;
@@ -61,6 +62,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Sparkles size={13} color={currentTab === 'skills' ? '#eab308' : undefined} />
                 <span>Skills Matrix</span>
+              </button>
+              <button
+                type="button"
+                className={`pill-btn ${currentTab === 'resume' ? 'active-done' : ''}`}
+                onClick={() => onSelectTab('resume')}
+                style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <FileText size={13} color={currentTab === 'resume' ? '#06b6d4' : undefined} />
+                <span>Resume</span>
               </button>
             </div>
           )}
